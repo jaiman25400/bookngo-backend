@@ -13,7 +13,7 @@ export class CustomerUsersController {
   constructor(private readonly customerUsersService: CustomerUsersService) {}
 
   // Invite user & send email
-  @Post('invite')
+@Post('invite')     
   async inviteUser(@Body() body: InviteUserDto) {
     return this.customerUsersService.inviteUser(
       body.email,
