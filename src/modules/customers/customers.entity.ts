@@ -14,9 +14,9 @@ export class Customer {
   @Column()
   password: string;  // Hashed password for login
 
-  @Column('enum', { enum: ['Winter', 'Summer', 'Events'], array: true, default: '{}'})
-  business_type: string[];  // Stores multiple business types
-
+  @Column('enum', { enum: ['Winter', 'Summer', 'Events'], array: true, default: '{}' })
+  business_type: string[];
+  
   @Column({default : 'ADMIN'})
   role: string;  // Hashed password
 

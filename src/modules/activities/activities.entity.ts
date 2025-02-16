@@ -42,7 +42,7 @@ export class ActivityPricing {
   activity: Activity;  // Links pricing to an activity
 
   @Column()
-  duration_label: string;  // Business-defined duration (e.g., "90 minutes", "Half-day", "Weekend Pass")
+  duration_label: string;  // Business-defined duration (e.g., "90 minutes", "Half-day")
 
   @Column('int', { nullable: true })
   duration_value: number;  // Numeric value (e.g., 90, 4, 7)
