@@ -9,9 +9,6 @@ export class CustomersService {
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
   ) {}
-  async findOneByEmail(email: string): Promise<Customer | null> {
-    return this.customerRepository.findOne({ where: { email } });
-  }
 
   async findOneById(id: number): Promise<Customer | null> {
     return this.customerRepository.findOne({ where: { id } });
