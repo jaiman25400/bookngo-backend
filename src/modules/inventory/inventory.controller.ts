@@ -15,7 +15,6 @@ export class InventoryController {
 
   @Get()
   async getAllInventories(@Query('customer_id') customer_id: number) {
-    console.log("Cust :",customer_id)
     return this.inventoryService.getAllInventories(customer_id);
   }
 
