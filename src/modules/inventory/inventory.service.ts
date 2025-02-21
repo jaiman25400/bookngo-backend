@@ -31,6 +31,7 @@ export class InventoryService {
       equipment_name,
       totalQuantity,
       availableQuantity,
+      rental_price_per_hour,
       sizes,
     } = createInventoryDto;
 
@@ -48,6 +49,7 @@ export class InventoryService {
       equipment_name,
       totalQuantity,
       availableQuantity,
+      rental_price_per_hour,
     });
 
     const savedInventory = await this.inventoryRepository.save(newInventory);
@@ -84,7 +86,6 @@ export class InventoryService {
   }
 
   async updateInventory(id: number, updateInventoryDto: UpdateInventoryDto) {
-
     // Step 1: Get the existing inventory by ID
     const inventory = await this.getInventoryById(id);
     if (!inventory) {
@@ -153,14 +154,15 @@ export class InventoryService {
       where: { id, customer: { id: customer_id } }, // ✅ Ensure inventory belongs to customer
       relations: ['customer'],
     });
-  
+
     if (!inventory) {
-      throw new NotFoundException(`Inventory not found or does not belong to the customer.`);
+      throw new NotFoundException(
+        `Inventory not found or does not belong to the customer.`,
+      );
     }
-  
+
     return await this.inventoryRepository.remove(inventory);
   }
-  
 
   async addInventorySize(
     inventoryId: number,

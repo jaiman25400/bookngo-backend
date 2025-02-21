@@ -10,7 +10,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Customer } from '../../customers/customers.entity';
-import { ActivityInventory } from './activities-inventory.entity';
 
 @Entity('activities')
 export class Activity {
@@ -18,36 +17,25 @@ export class Activity {
   id: number;
 
   @ManyToOne(() => Customer, (customer) => customer.id, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'customer_id' })
   customer: Customer;
 
   @Column()
-  activity_name: string; // e.g., "Ski Day Pass", "Ski 3-Hour Pass", "Season Pass"
+  activity_name: string;
 
-  @Column('text', { nullable: true })
-  activity_description: string;
-
-  @Column({ default: false }) 
-  requires_rental: boolean; // If true, user can select rentals
-
-  @OneToMany(
-    () => ActivityInventory,
-    (activityInventory) => activityInventory.activity,
-    { cascade: true },
-  )
-  activityInventories: ActivityInventory[];
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  base_price: number; // ✅ Activity price
 
   @Column({ type: 'int', nullable: true })
-  duration_hours: number; // e.g., 3 for a 3-hour pass
+  duration_hours: number;
 
   @Column({ type: 'time', nullable: true })
-  start_time: string; // e.g., "08:00:00"
+  start_time: string;
 
   @Column({ type: 'time', nullable: true })
-  end_time: string; // e.g., "21:30:00"
+  end_time: string;
 
   @Column({ type: 'date', nullable: true })
-  start_date: Date; 
+  start_date: Date;
 
   @Column({ type: 'date', nullable: true })
   end_date: Date;
