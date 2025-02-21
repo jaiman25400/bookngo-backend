@@ -18,6 +18,11 @@ export class UpdateInventoryDto {
   availableQuantity?: number;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  rental_price_per_hour?: number;
+  
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateInventorySizeDto)

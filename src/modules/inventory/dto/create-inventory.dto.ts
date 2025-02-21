@@ -21,6 +21,11 @@ export class CreateInventoryDto {
   @Min(1)
   availableQuantity: number;
 
+  @IsNotEmpty()
+  @IsInt()
+  @Min(1)
+  rental_price_per_hour: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateInventorySizeDto)
