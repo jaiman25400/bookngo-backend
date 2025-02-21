@@ -8,6 +8,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ActivitiesModule } from './modules/activities/activities.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { AppService } from './app.service';
     CustomersModule,
     AuthModule,
     CustomerUsersModule,
-    InventoryModule
+    InventoryModule,
+    ActivitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

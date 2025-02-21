@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Customer } from '../../customers/customers.entity';
 import { InventorySize } from './inventory-size.entity';
-import { ActivityInventory } from '../../activities/entities/activities-inventory.entity';
+// import { ActivityInventory } from '../../activities/entities/activities-inventory.entity';
 
 @Entity('inventories')
 export class Inventory {
@@ -43,11 +43,11 @@ export class Inventory {
   sizes: InventorySize[];
 
   // Relation: This inventory might be used in one or more activities
-  @OneToMany(
-    () => ActivityInventory,
-    (activityInventory) => activityInventory.inventory,
-  )
-  activityInventories: ActivityInventory[];
+  // @OneToMany(
+  //   () => ActivityInventory,
+  //   (activityInventory) => activityInventory.inventory,
+  // )
+  // activityInventories: ActivityInventory[];
 
   @CreateDateColumn()
   created_at: Date;
