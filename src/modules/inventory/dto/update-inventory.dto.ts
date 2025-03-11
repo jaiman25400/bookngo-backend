@@ -8,18 +8,16 @@ export class UpdateInventoryDto {
   equipment_name?: string; // Fix naming to match entity
 
   @IsOptional()
-  @IsInt()
+  @Type(() => Number) // Automatically converts string to number
   @Min(1)
   totalQuantity?: number;
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
+  @Type(() => Number) // Automatically converts string to number
   availableQuantity?: number;
 
   @IsOptional()
-  @IsInt()
-  @Min(1)
+  @Type(() => Number) // Automatically converts string to number
   rental_price_per_hour?: number;
   
   @IsOptional()

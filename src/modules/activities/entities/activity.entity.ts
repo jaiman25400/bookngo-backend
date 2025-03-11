@@ -4,12 +4,16 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  OneToMany,
+  ManyToMany,
+  JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
-  JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Customer } from '../../customers/customers.entity';
+import { ActivityZone } from '../../activity-zones/entities/activity-zone.entity';
+import { ActivitySchedule } from './activity-schedule.entity';
+import { ActivityHoliday } from './activity-holiday.entity';
 
 @Entity('activities')
 export class Activity {
@@ -19,6 +23,27 @@ export class Activity {
   @ManyToOne(() => Customer, (customer) => customer.id, { onDelete: 'CASCADE' })
   customer: Customer;
 
+  // ✅ Many-to-Many relationship with Zones
+  @ManyToMany(() => ActivityZone, { cascade: true })
+  @JoinTable({
+    name: 'activity_zone_mapping',
+    joinColumn: { name: 'activity_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'zone_id', referencedColumnName: 'id' },
+  })
+  zones: ActivityZone[];
+
+  @OneToMany(() => ActivitySchedule, (schedule) => schedule.activity, {
+    cascade: true,
+    onDelete: 'CASCADE' // Database-level cascade
+  })
+  schedules: ActivitySchedule[];
+
+  @OneToMany(() => ActivityHoliday, (holiday) => holiday.activity, {
+    cascade: true,
+    onDelete: 'CASCADE', // Ensures holidays are deleted if activity is deleted
+  })
+  holidays: ActivityHoliday[];
+
   @Column()
   activity_name: string;
 
@@ -27,12 +52,6 @@ export class Activity {
 
   @Column({ type: 'int', nullable: true })
   duration_hours: number;
-
-  @Column({ type: 'time', nullable: true })
-  start_time: string;
-
-  @Column({ type: 'time', nullable: true })
-  end_time: string;
 
   @Column({ type: 'date', nullable: true })
   start_date: Date;

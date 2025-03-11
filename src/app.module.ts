@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ActivitiesModule } from './modules/activities/activities.module';
+import { ActivityZonesModule } from './modules/activity-zones/activity-zones.module';
 
 @Module({
   imports: [
@@ -21,8 +22,9 @@ import { ActivitiesModule } from './modules/activities/activities.module';
     CustomerUsersModule,
     InventoryModule,
     ActivitiesModule,
+    ActivityZonesModule
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {} 
