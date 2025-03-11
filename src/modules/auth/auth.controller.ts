@@ -6,77 +6,86 @@ import {
   Get,
   Req,
   UnauthorizedException,
+  InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { Response } from 'express';  // Use Response from express directly
+import { Response, Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
+import { Public } from './public.decorator';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
-    private authService: AuthService,
-    private jwtService: JwtService,
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService,
   ) {}
 
+  @Public() // ✅ This route is open and does not require a token
   @Post('login')
   async login(
     @Body() loginDto: { email: string; password: string },
-    @Res() res: Response,  // Use the Response type from express
+    @Res() res: Response,
   ) {
-    const user = await this.authService.validateUser(
-      loginDto.email,
-      loginDto.password,
-    );
+    try {
+      const { email, password } = loginDto;
 
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+      if (!email || !password) {
+        throw new UnauthorizedException('Email and password are required');
+      }
+
+      const user = await this.authService.validateUser(email, password);
+
+      this.logger.log(`User logged in: ${user.email}`);
+
+      const { access_token } = await this.authService.login(user);
+
+      res.cookie('token', access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 3600000,
+      });
+
+      return res.json({ message: 'Login successful' });
+    } catch (error) {
+      this.logger.error(
+        `Login failed for user: ${loginDto.email}`,
+        error.stack,
+      );
+
+      if (error instanceof UnauthorizedException) {
+        return res.status(401).json({ message: error.message });
+      }
+
+      throw new InternalServerErrorException('An error occurred during login');
     }
-
-    const { access_token } = await this.authService.login(user);
-
-    // Set JWT token in HttpOnly cookie
-    res.cookie('token', access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Ensure secure cookie in production
-      sameSite: 'strict',
-      maxAge: 3600000, // 1-hour expiration
-    });
-
-    return res.json({
-      message: 'Login successful'
-    });
   }
 
   @Get('me')
-  async getMe(@Req() req: Request & { cookies: any }) {
-    try {
-      const token = req.cookies?.token; // Get token from cookies
-
-      if (!token) {
-        throw new UnauthorizedException('No token found');
-      }
-
-      const decoded = this.jwtService.verify(token); // Verify token
-
-      return await this.authService.getUserById(decoded.sub); // Fetch user details
-    } catch (error) {
-      throw new UnauthorizedException('Invalid token');
-    }
+  async getMe(@Req() req: Request) {
+    return req.user; // Already attached by JwtAuthGuard
   }
+  
 
   @Post('logout')
   async logout(@Res() res: Response) {
-    // Clear the token cookie by setting an expired date
-    res.cookie('token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Ensure secure cookie in production
-      sameSite: 'strict',
-      expires: new Date(0), // Expire immediately
-      path: '/', // Ensure the path matches the token path
-    });
+    try {
+      res.cookie('token', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        expires: new Date(0),
+        path: '/',
+      });
 
-    return res.json({
-      message: 'Logged out successfully',
-    });
+      this.logger.log('User logged out successfully');
+      return res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+      this.logger.error('Logout error', error.stack);
+      throw new InternalServerErrorException('An error occurred during logout');
+    }
   }
 }

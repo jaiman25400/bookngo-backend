@@ -1,7 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
+  BadRequestException 
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -25,9 +25,8 @@ export class InventoryService {
     private readonly customerRepository: Repository<Customer>,
   ) {}
 
-  async createInventory(createInventoryDto: CreateInventoryDto) {
+  async createInventory(customer_id:number,createInventoryDto: CreateInventoryDto) {
     const {
-      customer_id,
       equipment_name,
       totalQuantity,
       availableQuantity,
@@ -35,12 +34,11 @@ export class InventoryService {
       sizes,
     } = createInventoryDto;
 
-    // Find customer (to link inventory)
-    const customer = await this.customerRepository.findOne({
-      where: { id: customer_id },
-    });
+
+    // Fetch customer entity from the database
+    const customer = await this.customerRepository.findOne({ where: { id: customer_id } });
     if (!customer) {
-      throw new Error('Customer not found');
+      throw new NotFoundException('Customer not found');
     }
 
     // Create inventory entry
