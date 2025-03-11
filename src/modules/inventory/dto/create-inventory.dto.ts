@@ -1,33 +1,28 @@
-import { IsNotEmpty, IsString, IsInt, Min, IsArray, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsString, IsInt, Min, IsArray, ValidateNested, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateInventorySizeDto } from './create-inventory-size.dto';
 
 export class CreateInventoryDto {
-  @IsNotEmpty()
-  @IsInt()
-  customer_id: number;
 
   @IsNotEmpty()
   @IsString()
   equipment_name: string;
 
   @IsNotEmpty()
-  @IsInt()
-  @Min(1)
+  @Type(() => Number) // Automatically converts string to number
   totalQuantity: number;
 
   @IsNotEmpty()
-  @IsInt()
-  @Min(1)
+  @Type(() => Number) // Automatically converts string to number
   availableQuantity: number;
 
   @IsNotEmpty()
-  @IsInt()
-  @Min(1)
+  @Type(() => Number) // Automatically converts string to number
   rental_price_per_hour: number;
 
+  @IsOptional()
   @IsArray()
-  @ValidateNested({ each: true })
+  //@ValidateNested({ each: true })
   @Type(() => CreateInventorySizeDto)
   sizes: CreateInventorySizeDto[];
 }

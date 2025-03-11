@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, Request } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { CreateInventorySizeDto } from './dto/create-inventory-size.dto';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
@@ -9,13 +9,14 @@ export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}
 
   @Post('add')
-  async createInventory(@Body() createInventoryDto: CreateInventoryDto) {
-    return await this.inventoryService.createInventory(createInventoryDto);
+  async createInventory(@Request() req, @Body() createInventoryDto: CreateInventoryDto) {
+    console.log("Add INV :",createInventoryDto)
+    return await this.inventoryService.createInventory(req.user.customer,createInventoryDto);
   }
 
   @Get()
-  async getAllInventories(@Query('customer_id') customer_id: number) {
-    return this.inventoryService.getAllInventories(customer_id);
+  async getAllInventories(@Request() req) {
+    return this.inventoryService.getAllInventories(req.user.customer);
   }
 
   @Get(':id')
@@ -28,15 +29,16 @@ export class InventoryController {
     @Param('id') id: number,
     @Body() updateInventoryDto: UpdateInventoryDto,
   ) {
+    console.log('Update Inv',updateInventoryDto)
     return this.inventoryService.updateInventory(id, updateInventoryDto);
   }
 
   @Delete(':id')
   async deleteInventory(
     @Param('id') id: number,
-    @Query('customer_id') customer_id: number, // ✅ Get customer_id from query params
+    @Request() req
   ) {
-    return this.inventoryService.deleteInventory(id, customer_id);
+    return this.inventoryService.deleteInventory(id, req.user?.customer);
   }  
 
   @Post(':id/sizes')

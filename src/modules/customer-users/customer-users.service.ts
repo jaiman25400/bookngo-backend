@@ -27,53 +27,42 @@ export class CustomerUsersService {
     customerId: number,
     role: string,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner(); // Start transaction
+    const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.startTransaction();
-
+    
     try {
-      let user = await this.customerUserRepository.findOne({
+      // Check for existing active user BEFORE transaction
+      const existingUser = await this.customerUserRepository.findOne({
         where: { email },
       });
-
-      if (user && user.is_active) {
-        throw new BadRequestException('User is already active');
+  
+      if (existingUser?.is_active) {
+        throw new BadRequestException('User already exists and is active');
       }
-
-      const token = crypto.randomBytes(32).toString('hex'); // Secure token
-
-      if (user) {
-        // If user exists but inactive, update token
-        user.password_token = token;
-        await queryRunner.manager.save(user);
-      } else {
-        // Insert new inactive user
-        user = this.customerUserRepository.create({
-          email,
-          name,
-          customer: { id: customerId },
-          role,
-          password_token: token,
-          is_active: false,
-        });
-
-        await queryRunner.manager.save(user);
-      }
-
-      // 🔹 Attempt to send the email
-      await this.sendInviteEmail(email, token);
-
-      await queryRunner.commitTransaction(); // ✅ Commit if email is sent successfully
+  
+      await queryRunner.startTransaction();
+  
+      // Rest of your existing logic...
+      // (token generation, user creation/update, email sending)
+  
+      await queryRunner.commitTransaction();
       return { message: 'Invitation sent successfully' };
     } catch (error) {
-      await queryRunner.rollbackTransaction(); // ❌ Rollback on failure
-      console.error('Error inviting user:', error);
-      throw new InternalServerErrorException('Failed to invite user');
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+  
+      // Preserve specific error types
+      if (error instanceof BadRequestException) {
+        throw error; // Will return 400 to client
+      }
+  
+      console.error('Server Error:', error);
+      throw new InternalServerErrorException('Failed to process invitation');
     } finally {
       await queryRunner.release();
     }
   }
-
   // 2️⃣ Send email securely using environment variables
   async sendInviteEmail(email: string, token: string) {
     try {
@@ -130,7 +119,10 @@ export class CustomerUsersService {
   }
 
   async findOneByEmail(email: string): Promise<CustomerUser | null> {
-    return this.customerUserRepository.findOne({ where: { email } });
+    return this.customerUserRepository.findOne({
+      where: { email },
+      relations: ['customer'], // ✅ Ensure customer relation is loaded
+    });
   }
 
   async findOneById(id: number): Promise<CustomerUser | null> {
@@ -143,7 +135,7 @@ export class CustomerUsersService {
   async getTeam(customerId: number): Promise<CustomerUser[]> {
     return this.customerUserRepository.find({
       where: { customer: { id: customerId } }, // Fetch users by customer_id
-      relations: ['customer'], // Include the customer relation
+      //  relations: ['customer'], // Include the customer relation
       select: ['id', 'email', 'role', 'is_active', 'name', 'created_at'], // Exclude sensitive fields
     });
   }

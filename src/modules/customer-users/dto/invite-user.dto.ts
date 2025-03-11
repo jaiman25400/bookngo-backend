@@ -1,19 +1,16 @@
 import { IsString, IsEmail, IsInt, Min, IsNotEmpty } from 'class-validator';
 
 export class InviteUserDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'Invalid email format' })
   @IsNotEmpty()
   email: string;
 
-  @IsString()
+  @IsString({ message: 'Name is required' })
   @IsNotEmpty()
   name: string;
 
-  @IsInt()
-  @Min(1) // Ensure customerId is a positive integer
-  customerId: number;
 
-  @IsString()
+  @IsString({ message: 'Role is required' })
   @IsNotEmpty()
   role: string;
 }

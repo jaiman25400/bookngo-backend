@@ -1,14 +1,5 @@
-// src/activities/dto/create-activity.dto.ts
-import {
-  IsArray,
-  IsBoolean,
-  IsDate,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Matches,
-  ValidateNested,
-} from 'class-validator';
+// src/activities/dto/update-activity.dto.ts
+import { IsArray, IsBoolean, IsDate, IsNumber, IsOptional, IsString, ValidateNested, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ActivityScheduleDto {
@@ -27,7 +18,7 @@ class ActivityScheduleDto {
   is_24hours: boolean;
 
   @IsBoolean()
-  is_holiday: boolean; // Fix typo: holiday -> is_holiday
+  is_holiday: boolean;
 }
 
 class ActivityHolidayDto {
@@ -36,18 +27,19 @@ class ActivityHolidayDto {
   date: Date;
 }
 
-export class CreateActivityDto {
+export class UpdateActivityDto {
+  @IsOptional()
   @IsString()
-  activity_name: string;
+  activity_name?: string;
 
-  @Type(() => Number) 
+  @IsOptional()
   @IsNumber()
-  base_price: number;
+  base_price?: number;
 
   @IsOptional()
   @IsNumber()
   duration_hours?: number;
-  // create-activity.dto.ts
+
   @IsOptional()
   @IsDate()
   @Type(() => Date)
@@ -57,21 +49,22 @@ export class CreateActivityDto {
   @IsDate()
   @Type(() => Date)
   end_date?: Date;
+
   @IsOptional()
+  @IsBoolean()
   is_active?: boolean;
 
-  // ✅ Capture zone IDs
-  @IsArray()
   @IsOptional()
-  zone_id?: number[];
-
   @IsArray()
+  zone_ids?: number[];
+
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ActivityScheduleDto)
-  schedules: ActivityScheduleDto[];
+  schedules?: ActivityScheduleDto[];
 
-  @IsArray()
+  @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ActivityHolidayDto)
-  holidays: ActivityHolidayDto[];
+  holidays?: ActivityHolidayDto[];
 }
