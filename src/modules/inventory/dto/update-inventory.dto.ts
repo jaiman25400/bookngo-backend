@@ -1,28 +1,46 @@
-import { IsOptional, IsString, IsInt, Min, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { CreateInventorySizeDto } from './create-inventory-size.dto';
+import { BadRequestException } from '@nestjs/common';
 
 export class UpdateInventoryDto {
   @IsOptional()
   @IsString()
-  equipment_name?: string; // Fix naming to match entity
+  equipment_name?: string;
 
   @IsOptional()
-  @Type(() => Number) // Automatically converts string to number
+  @Type(() => Number)
   @Min(1)
   totalQuantity?: number;
 
   @IsOptional()
-  @Type(() => Number) // Automatically converts string to number
+  @Type(() => Number)
   availableQuantity?: number;
 
   @IsOptional()
-  @Type(() => Number) // Automatically converts string to number
+  @Type(() => Number)
   rental_price_per_hour?: number;
-  
+
+  // Optional update for the description field
   @IsOptional()
+  @IsString()
+  description?: string;
+
+  @Transform(({ value }) => {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      throw new BadRequestException('Invalid JSON format for schedules');
+    }
+  })
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateInventorySizeDto)
-  sizes?: CreateInventorySizeDto[]; // Correct DTO structure for sizes
+  @IsOptional()
+  sizes: CreateInventorySizeDto[];
 }

@@ -10,34 +10,79 @@ import {
   BadRequestException,
   InternalServerErrorException,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { ActivityZonesService } from './activity-zones.service';
-import { CreateActivityZoneDto } from './dto/create-activity-zone.dto';
 import { UpdateActivityZoneDto } from './dto/update-activity-zone.dto';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { join } from 'path';
+import { CreateActivityZoneDto } from './dto/create-activity-zone.dto';
 
 @Controller('activity-zones')
 export class ActivityZonesController {
-  constructor(
-    private readonly activityZonesService: ActivityZonesService,
-  ) {}
+  constructor(private readonly activityZonesService: ActivityZonesService) {}
 
   @Post('add')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'zone_thumbnail_image', maxCount: 1 },
+        { name: 'zone_image_gallery', maxCount: 5 },
+      ],
+      {
+        storage: diskStorage({
+          destination: join(process.cwd(), 'uploads', 'zones'),
+          filename: (req, file, cb) => {
+            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
+            cb(null, uniqueName);
+          },
+        }),
+      },
+    ),
+  )
   async create(
     @Body() createActivityZoneDto: CreateActivityZoneDto,
     @Request() req,
+    @UploadedFiles()
+    uploadedFiles: {
+      zone_thumbnail_image?: Express.Multer.File[];
+      zone_image_gallery?: Express.Multer.File[];
+    },
   ) {
     try {
+      console.log('Files:', uploadedFiles);
+      console.log('DTO:', createActivityZoneDto);
+
       const customer_id = req.user?.customer; // Get the customer_id from the user data
 
-      if (!req.user?.customer) {
+      if (!customer_id) {
         throw new BadRequestException('Customer ID is missing for the user');
       }
 
+      const filePaths: {
+        zone_thumbnail_image?: string;
+        zone_image_gallery?: string[];
+      } = {};
+
+      // Handle thumbnail file
+      if (uploadedFiles?.zone_thumbnail_image?.[0]) {
+        filePaths.zone_thumbnail_image = `/uploads/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
+      }
+
+      // Handle gallery files
+      if (uploadedFiles?.zone_image_gallery?.length) {
+        filePaths.zone_image_gallery = uploadedFiles.zone_image_gallery.map(
+          (f) => `/uploads/zones/${f.filename}`,
+        );
+      }
+
       // Pass the customer_id along with the rest of the activity zone data
-      return await this.activityZonesService.create({
-        ...createActivityZoneDto,
+      return this.activityZonesService.create(
+        { ...createActivityZoneDto, ...filePaths },
         customer_id,
-      });
+      );
     } catch (error) {
       console.error('Error creating Activity Zone:', error);
       throw new InternalServerErrorException(
@@ -65,20 +110,58 @@ export class ActivityZonesController {
   }
 
   @Patch(':id')
-  update(
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'zone_thumbnail_image', maxCount: 1 },
+        { name: 'zone_image_gallery', maxCount: 5 },
+      ],
+      {
+        storage: diskStorage({
+          destination: join(process.cwd(), 'uploads', 'zones'),
+          filename: (req, file, cb) => {
+            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
+            cb(null, uniqueName);
+          },
+        }),
+      },
+    ),
+  )
+  async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateActivityZoneDto: UpdateActivityZoneDto,
+    @UploadedFiles()
+    uploadedFiles: {
+      zone_thumbnail_image?: Express.Multer.File[];
+      zone_image_gallery?: Express.Multer.File[];
+    },
   ) {
-    if (Object.keys(updateActivityZoneDto).length === 0) {
-      throw new BadRequestException('Empty payload');
+
+    const filePaths: {
+      zone_thumbnail_image?: string;
+      zone_image_gallery?: string[];
+    } = {};
+
+    // Handle thumbnail file
+    if (uploadedFiles?.zone_thumbnail_image?.[0]) {
+      filePaths.zone_thumbnail_image = `/uploads/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
     }
 
-    return this.activityZonesService.update(id, updateActivityZoneDto);
+    // Handle gallery files
+    if (uploadedFiles?.zone_image_gallery?.length) {
+      filePaths.zone_image_gallery = uploadedFiles.zone_image_gallery.map(
+        (f) => `/uploads/zones/${f.filename}`,
+      );
+    }
+
+    return this.activityZonesService.update(id, {
+      ...updateActivityZoneDto,
+      ...filePaths,
+    });
   }
 
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number) {
     return this.activityZonesService.remove(id);
   }
-  
 }

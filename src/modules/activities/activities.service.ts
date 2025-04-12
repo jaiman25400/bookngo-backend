@@ -4,16 +4,29 @@ import {
   NotFoundException,
   ForbiddenException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { Activity } from './entities/activity.entity';
 import { ActivityHoliday } from './entities/activity-holiday.entity';
 import { ActivitySchedule } from './entities/activity-schedule.entity';
 import { CreateActivityDto } from './dto/create-activity.dto';
-import { Customer } from '../customers/customers.entity';
+import { Customer } from '../customers/entities/customers.entity';
 import { ActivityZone } from '../activity-zones/entities/activity-zone.entity';
 import { In, DataSource } from 'typeorm';
+import { BookingType } from './enums/activity-type.enum';
+import {
+  handleFileUpdates,
+  updateHolidays,
+  updateScalarFields,
+  updateSchedules,
+  updateZones,
+} from './utils/activities.helper';
+import {
+  deleteFileIfExists,
+  deleteMultipleFilesIfExist,
+} from 'src/utils/common.helper';
 
 @Injectable()
 export class ActivitiesService {
@@ -47,129 +60,212 @@ export class ActivitiesService {
 
   // Create Activity
   async createActivity(
-    createActivityDto: CreateActivityDto,
+    createData: CreateActivityDto & {
+      activity_thumbnail_image?: string | undefined;
+      activity_image_gallery?: string[] | undefined;
+    },
     customer_id: number,
   ): Promise<Activity> {
-    const { zone_id = [], ...activityData } = createActivityDto;
+    // Validate dates
+    if (new Date(createData.start_date) >= new Date(createData.end_date)) {
+      throw new BadRequestException('Start date must be before end date');
+    }
 
-    // Verify customer exists
+    // Validate customer existence
+    console.log('Act SVC :', createData);
+
     const customer = await this.customerRepository.findOne({
       where: { id: customer_id },
     });
     if (!customer) {
-      throw new NotFoundException(`Customer ${customer_id} not found`);
+      throw new NotFoundException(`Customer with ID ${customer_id} not found`);
     }
 
-    // Verify zones exist
-    const zones = await this.activityZoneRepository.findBy({
-      id: In(zone_id),
-    });
-    if (zone_id.length > 0 && zones.length !== zone_id.length) {
-      const missing = zone_id.filter((id) => !zones.some((z) => z.id === id));
-      throw new NotFoundException(`Invalid zone IDs: ${missing.join(', ')}`);
-    }
-    const newActivity = this.activityRepository.create({
-      ...activityData,
-      customer,
-      zones,
-    });
+    try {
+      // Validate zone_ids
+      let zones: ActivityZone[] = [];
+      if (createData?.zone_id) {
+        try {
+          const zoneIds = createData.zone_id;
+          if (!Array.isArray(zoneIds)) {
+            throw new BadRequestException('zone_id must be a JSON array');
+          }
 
-    console.log('Final Activity :', newActivity);
-    // 5. Save everything in one transaction
-    return this.activityRepository.save(newActivity);
+          zones = await this.activityZoneRepository.findBy({
+            id: In(zoneIds),
+          });
+
+          if (zones.length !== zoneIds.length) {
+            const missing = zoneIds.filter(
+              (id) => !zones.some((z) => z.id === id),
+            );
+            throw new NotFoundException(
+              `Invalid zone IDs: ${missing.join(', ')}`,
+            );
+          }
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            throw new BadRequestException('Invalid zone_id JSON format');
+          }
+          throw e;
+        }
+      }
+
+      // schedules
+      let schedules: ActivitySchedule[] = [];
+      if (createData?.schedules) {
+        try {
+          const scheduleData = createData.schedules;
+          if (!Array.isArray(scheduleData)) {
+            throw new BadRequestException('schedules must be a JSON array');
+          }
+          schedules = scheduleData.map((s) => {
+            const schedule = new ActivitySchedule();
+            Object.assign(schedule, s);
+            return schedule;
+          });
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            throw new BadRequestException('Invalid schedules JSON format');
+          }
+          throw e;
+        }
+      }
+
+      // holidays
+      let holidays: ActivityHoliday[] = [];
+      if (createData?.holidays) {
+        try {
+          const holidayData = createData.holidays;
+          if (!Array.isArray(holidayData)) {
+            throw new BadRequestException('holidays must be a JSON array');
+          }
+          holidays = holidayData.map((h) => {
+            const holiday = new ActivityHoliday();
+            holiday.date = new Date(h.date);
+            return holiday;
+          });
+        } catch (e) {
+          if (e instanceof SyntaxError) {
+            throw new BadRequestException('Invalid holidays JSON format');
+          }
+          throw e;
+        }
+      }
+
+      //  Convert booking_type from string to enum.
+      // If the provided booking_type is valid, use it; otherwise, default to ANYTIME.
+      let bookingType: BookingType = BookingType.ANYTIME;
+      if (createData.booking_type) {
+        // Check if the provided value is one of the enum values
+        if (
+          Object.values(BookingType).includes(
+            createData.booking_type as BookingType,
+          )
+        ) {
+          bookingType = createData.booking_type as BookingType;
+        } else {
+          throw new BadRequestException(
+            `Invalid booking_type: ${createData.booking_type}`,
+          );
+        }
+      }
+
+      // Construct the activity data explicitly.
+      const activityData = {
+        customer,
+        zones,
+        schedules,
+        holidays,
+        activity_name: createData.activity_name,
+        activity_description: createData.activity_description,
+        base_price: createData.base_price,
+        duration_hours: createData.duration_hours,
+        start_date: createData.start_date,
+        end_date: createData.end_date,
+        age_group: createData.age_group,
+        activity_tagline: createData.activity_tagline,
+        activity_thumbnail_image: createData.activity_thumbnail_image,
+        activity_image_gallery: createData.activity_image_gallery,
+        is_active: createData.is_active,
+        safety_instructions: createData.safety_instructions,
+        requires_waiver: createData.requires_waiver,
+        booking_type: bookingType,
+      };
+
+      // Create and save the new activity entity
+      const newActivity = this.activityRepository.create(activityData);
+      return await this.activityRepository.save(newActivity);
+    } catch (error) {
+      console.error('Error creating activity:', error);
+
+      // Handle known error types
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      // Handle database errors
+      if (error instanceof QueryFailedError) {
+        throw new InternalServerErrorException('Database operation failed');
+      }
+
+      // Fallback for unexpected errors
+      throw new InternalServerErrorException('Failed to create activity');
+    }
   }
 
   //Update Activity
-  async updateActivity(id: number, updateActivityDTO: any): Promise<any> {
-    const activity = await this.activityRepository.findOne({
-      where: { id },
-      relations: ['zones', 'schedules', 'holidays'],
-    });
+  async updateActivity(
+    id: number,
+    updateActivityDTO: any & {
+      activity_thumbnail_image?: string;
+      activity_image_gallery?: string[];
+    },
+  ): Promise<any> {
+    try {
 
-    if (!activity) throw new NotFoundException('Activity not found');
-
-    // Update scalar fields
-    if (updateActivityDTO.activity_name !== undefined)
-      activity.activity_name = updateActivityDTO.activity_name;
-    if (updateActivityDTO.base_price !== undefined)
-      activity.base_price = updateActivityDTO.base_price;
-    if (updateActivityDTO.duration_hours !== undefined)
-      activity.duration_hours = updateActivityDTO.duration_hours;
-    if (updateActivityDTO.start_date !== undefined)
-      activity.start_date = updateActivityDTO.start_date;
-    if (updateActivityDTO.end_date !== undefined)
-      activity.end_date = updateActivityDTO.end_date;
-    if (updateActivityDTO.is_active !== undefined)
-      activity.is_active = updateActivityDTO.is_active;
-
-    // Update Zones
-    if (updateActivityDTO.zone_ids !== undefined) {
-      const zones = await this.activityZoneRepository.findBy({
-        id: In(updateActivityDTO.zone_ids),
-      });
-      activity.zones = zones;
-    }
-
-    // Handle Schedules (Update existing, add new, remove old)
-    if (updateActivityDTO.schedules !== undefined) {
-      const updatedSchedules = updateActivityDTO.schedules.map((dto) => {
-        // Check if schedule exists and update, else create a new one
-        let schedule = activity.schedules.find((sch) => sch.day === dto.day);
-        if (!schedule) {
-          schedule = new ActivitySchedule();
-        }
-
-        schedule.day = dto.day;
-        schedule.start_time = dto.start_time || null;
-        schedule.end_time = dto.end_time || null;
-        schedule.is_24hours = dto.is_24hours;
-        schedule.is_holiday = dto.is_holiday;
-
-        return schedule;
+      const activity = await this.activityRepository.findOne({
+        where: { id },
+        relations: ['zones', 'schedules', 'holidays'],
       });
 
-      // Update the schedules with the modified or newly created ones
-      activity.schedules = updatedSchedules;
-    }
+      if (!activity) throw new NotFoundException('Activity not found');
 
-    // Handle Holidays (Update existing, add new, remove old)
-    if (updateActivityDTO.holidays !== undefined) {
-      // Step 1: Map the new holiday data and update or create new holiday records
-      const updatedHolidays = updateActivityDTO.holidays.map((dto) => {
-        let holiday = activity.holidays.find((hol) => hol.date === dto.date);
-        if (!holiday) {
-          holiday = new ActivityHoliday(); // Create new holiday if not found
-        }
-        holiday.date = dto.date;
+      // Handle file updates first
+      await handleFileUpdates(activity, updateActivityDTO);
 
-        // Do not set the activity reference here to avoid circular reference issues
-        // holiday.activity = activity; // <-- Remove this line
+      // // Update scalar fields using DTO
+      await updateScalarFields(activity, updateActivityDTO);
 
-        return holiday;
-      });
-
-      // Step 2: Identify and delete the holidays that were removed
-      const removedHolidays = activity.holidays.filter(
-        (hol) =>
-          !updateActivityDTO.holidays.some((dto) => dto.date === hol.date),
+      // // Update relationships
+      await updateZones(
+        activity,
+        updateActivityDTO.zone_id,
+        this.activityZoneRepository,
+      );
+      await updateSchedules(
+        activity,
+        updateActivityDTO.schedules,
+        this.activityScheduleRepository,
+      );
+      await updateHolidays(
+        activity,
+        updateActivityDTO,
+        this.activityHolidayRepository,
       );
 
-      // Step 3: Delete the removed holidays from the database
-      for (const removedHoliday of removedHolidays) {
-        await this.activityHolidayRepository.remove(removedHoliday);
-      }
-
-      // Step 4: Save or update the holidays (exclude circular references)
-      await this.activityHolidayRepository.save(updatedHolidays);
-
-      // Step 5: Update the holidays array with the new and updated holidays
-      activity.holidays = updatedHolidays;
+      // Save the updated activity
+      const updatedActivity = await this.activityRepository.save(activity);
+      return updatedActivity;
+    } catch (error) {
+      console.error('Error updating activity data:', error);
+      throw new InternalServerErrorException('Failed to update activity data');
     }
-
-    return this.activityRepository.save(activity);
   }
 
-  // activities.service.ts
   async removeActivity(id: number, customerId: number): Promise<any> {
     try {
       console.log('Del service : ', id, customerId);
@@ -191,6 +287,14 @@ export class ActivitiesService {
 
       // Delete the activity (with cascading deletes for related tables)
       await this.activityRepository.delete(id);
+
+      if (activity.activity_thumbnail_image != undefined) {
+        await deleteFileIfExists(activity.activity_thumbnail_image);
+      }
+
+      if (activity.activity_image_gallery != undefined) {
+        await deleteMultipleFilesIfExist(activity.activity_image_gallery);
+      }
 
       return {
         message: `Activity with ID ${id} has been deleted successfully.`,

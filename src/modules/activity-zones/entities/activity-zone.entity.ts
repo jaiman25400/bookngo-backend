@@ -1,3 +1,4 @@
+// activity-zone.entity.ts
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,7 +8,20 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Customer } from '../../customers/customers.entity';
+import { Customer } from '../../customers/entities/customers.entity';
+
+export enum AgeGroup {
+  CHILD = '5+',
+  TEEN = '10+',
+  ADULT = '18+',
+  SENIOR = '50+',
+}
+
+export enum ZoneStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  CLOSED = 'closed',
+}
 
 @Entity('activity_zones')
 export class ActivityZone {
@@ -15,26 +29,39 @@ export class ActivityZone {
   id: number;
 
   @Column()
-  name: string; // Mandatory Zone Name
+  name: string;
 
-  @Column({ nullable: false })
-  description: string; // Mandatory Zone Description
+  @Column({ type: 'text', nullable: false, default: '' })
+  description: string;
 
+  @Column({ type: 'enum', enum: AgeGroup, nullable: true })
+  age_group: AgeGroup | null;
+  
+  @Column({ nullable: true })
+  zone_tagline: string;
+
+  @Column({ nullable: true })
+  zone_thumbnail_image: string;
+
+  @Column('text', { array: true, nullable: true })
+  zone_image_gallery: string[];
+
+  @Column({
+    type: 'enum',
+    enum: ZoneStatus,
+    default: ZoneStatus.ACTIVE,
+  })
+  status: ZoneStatus;
+
+  // Existing fields
   @Column({ type: 'int', nullable: true })
-  capacity: number; // Max capacity for this zone (optional)
+  capacity: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  price: number; // Zone-specific price (optional)
+  price: number;
 
-  @Column({ type: 'time', nullable: true })
-  start_time: string; // Start time for availability (optional)
-
-  @Column({ type: 'time', nullable: true })
-  end_time: string; // End time for availability (optional)
-
-  // Relation: Link each zone to a customer
   @ManyToOne(() => Customer, (customer) => customer.id, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'customer' }) // Use 'customer' as the column name for the foreign key
+  @JoinColumn({ name: 'customer' })
   customer: Customer;
 
   @CreateDateColumn()

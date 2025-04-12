@@ -1,7 +1,7 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException 
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,7 +10,10 @@ import { InventorySize } from './entities/inventory-size.entity';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { CreateInventorySizeDto } from './dto/create-inventory-size.dto';
-import { Customer } from '../customers/customers.entity';
+import { Customer } from '../customers/entities/customers.entity';
+import { join } from 'path';
+import { existsSync, unlinkSync } from 'fs';
+import { deleteFileIfExists } from 'src/utils/common.helper';
 
 @Injectable()
 export class InventoryService {
@@ -25,44 +28,58 @@ export class InventoryService {
     private readonly customerRepository: Repository<Customer>,
   ) {}
 
-  async createInventory(customer_id:number,createInventoryDto: CreateInventoryDto) {
-    const {
-      equipment_name,
-      totalQuantity,
-      availableQuantity,
-      rental_price_per_hour,
-      sizes,
-    } = createInventoryDto;
+  async createInventory(
+    customer: Customer,
+    createInventoryDto: CreateInventoryDto,
+    thumbnail: Express.Multer.File | undefined,
+  ) {
+    try {
+      const {
+        equipment_name,
+        totalQuantity,
+        availableQuantity,
+        rental_price_per_hour,
+        description,
+        sizes,
+      } = createInventoryDto;
 
+      // Generate thumbnail URL if file exists
+      const thumbnailImageUrl = thumbnail
+        ? `/uploads/inventory/${thumbnail.filename}`
+        : null;
 
-    // Fetch customer entity from the database
-    const customer = await this.customerRepository.findOne({ where: { id: customer_id } });
-    if (!customer) {
-      throw new NotFoundException('Customer not found');
+      // Create inventory entry including new optional fields
+      const newInventory = this.inventoryRepository.create({
+        customer: customer, // Must be a full Customer entity
+        equipment_name,
+        totalQuantity,
+        availableQuantity,
+        rental_price_per_hour: Number(rental_price_per_hour), // Ensure correct type
+        description,
+        thumbnailImageUrl: thumbnailImageUrl || null, // Explicit null
+      });
+
+      const savedInventory = await this.inventoryRepository.save(newInventory);
+
+      // Add sizes if provided, including the optional description field for each size
+      // Handle sizes parsing and saving
+      if (sizes) {
+        const parsedSizes = sizes;
+        if (parsedSizes.length > 0) {
+          const inventorySizes = parsedSizes.map((size) => ({
+            inventory: savedInventory,
+            ...size,
+          }));
+          await this.inventorySizeRepository.save(inventorySizes);
+        }
+      }
+
+      return savedInventory;
+    } catch (error) {
+      // Optionally log the error details using your preferred logging library or service.
+      // Example: this.logger.error('Error creating inventory', error.stack);
+      throw error; // Re-throw the error to be handled by higher-level middleware or error handlers.
     }
-
-    // Create inventory entry
-    const newInventory = this.inventoryRepository.create({
-      customer,
-      equipment_name,
-      totalQuantity,
-      availableQuantity,
-      rental_price_per_hour,
-    });
-
-    const savedInventory = await this.inventoryRepository.save(newInventory);
-
-    // Add sizes if provided
-    if (sizes && sizes.length > 0) {
-      const inventorySizes = sizes.map((size) => ({
-        inventory: savedInventory,
-        size: size.size,
-        quantity: size.quantity,
-      }));
-      await this.inventorySizeRepository.save(inventorySizes);
-    }
-
-    return savedInventory;
   }
 
   async getAllInventories(customer_id: number) {
@@ -83,83 +100,97 @@ export class InventoryService {
     return inventory;
   }
 
-  async updateInventory(id: number, updateInventoryDto: UpdateInventoryDto) {
-    // Step 1: Get the existing inventory by ID
-    const inventory = await this.getInventoryById(id);
-    if (!inventory) {
-      throw new NotFoundException(`Inventory with ID ${id} not found`);
-    }
-
-    // Step 2: Update the main inventory fields
-    Object.assign(inventory, updateInventoryDto);
-
-    // Step 3: Get updated sizes from DTO
-    const updatedSizes = updateInventoryDto.sizes || [];
-
-    // Step 4: Get existing sizes from the database
-    const existingSizes = await this.inventorySizeRepository.find({
-      where: { inventory: { id } },
-    });
-
-    // Step 5: Delete sizes that are no longer in the updated list
-    const sizesToDelete = existingSizes.filter(
-      (existingSize) =>
-        !updatedSizes.some(
-          (updatedSize) => updatedSize.size === existingSize.size,
-        ),
-    );
-    if (sizesToDelete.length > 0) {
-      await this.inventorySizeRepository.remove(sizesToDelete);
-    }
-
-    // Step 6: Update or create new sizes
-    for (const updatedSize of updatedSizes) {
-      const existingSize = existingSizes.find(
-        (size) => size.size === updatedSize.size,
-      );
-      if (existingSize) {
-        // Update existing size
-        existingSize.quantity = updatedSize.quantity;
-        await this.inventorySizeRepository.save(existingSize);
-      } else {
-        // Create new size (for new sizes, 'id' is not provided)
-        const newSize = this.inventorySizeRepository.create({
-          inventory, // Ensure association with the inventory
-          size: updatedSize.size,
-          quantity: updatedSize.quantity,
-        });
-        // Explicitly set the inventory foreign key
-        if (!newSize.inventory) {
-          newSize.inventory = inventory;
-        }
-        await this.inventorySizeRepository.save(newSize);
+  async updateInventory(
+    id: number,
+    updateInventoryDto: UpdateInventoryDto,
+    thumbnail?: Express.Multer.File,
+  ) {
+    try {
+      // Step 1: Get the existing inventory by ID
+      const inventory = await this.getInventoryById(id);
+      if (!inventory) {
+        throw new NotFoundException(`Inventory with ID ${id} not found`);
       }
+      // Handle file update
+      if (thumbnail) {
+        await deleteFileIfExists(inventory.thumbnailImageUrl);
+        // Update with new file path
+        inventory.thumbnailImageUrl = `/uploads/inventory/${thumbnail.filename}`;
+      }
+
+      // Step 2: Update the main inventory fields
+      // Update main inventory fields
+      Object.assign(inventory, updateInventoryDto);
+      const updatedSizes = updateInventoryDto.sizes || [];
+
+      // 1. Delete sizes not present in the update
+      const sizesToKeep = updatedSizes.map((s) => s.size);
+      await this.inventorySizeRepository
+        .createQueryBuilder()
+        .delete()
+        .where('inventory_id = :id AND size NOT IN (:...sizes)', {
+          id,
+          sizes: sizesToKeep.length > 0 ? sizesToKeep : [''],
+        })
+        .execute();
+
+      // 2. Upsert remaining sizes using proper relation format
+      if (updatedSizes.length > 0) {
+        const sizesToUpsert = updatedSizes.map((s) => ({
+          inventory: { id }, // Use relation format
+          size: s.size,
+          quantity: s.quantity,
+          description: s.description,
+        }));
+
+        await this.inventorySizeRepository.upsert(sizesToUpsert, {
+          conflictPaths: ['inventory.id', 'size'], // Use relation path
+          skipUpdateIfNoValuesChanged: true,
+        });
+      }
+
+      // Refresh sizes relationship
+      inventory.sizes = await this.inventorySizeRepository.find({
+        where: { inventory: { id } },
+      });
+
+      await this.inventoryRepository.save(inventory);
+      return inventory;
+    } catch (error) {
+      // Clean up uploaded file if error occurs
+      if (thumbnail) {
+        const newFilePath = join(process.cwd(), 'uploads', thumbnail.filename);
+        if (existsSync(newFilePath)) {
+          unlinkSync(newFilePath);
+        }
+      }
+      throw error;
     }
-
-    // Step 7: Refresh the inventory's sizes from the database to sync state
-    inventory.sizes = await this.inventorySizeRepository.find({
-      where: { inventory: { id } },
-    });
-
-    // Step 8: Save the updated inventory object
-    await this.inventoryRepository.save(inventory);
-
-    return inventory;
   }
 
   async deleteInventory(id: number, customer_id: number) {
-    const inventory = await this.inventoryRepository.findOne({
-      where: { id, customer: { id: customer_id } }, // ✅ Ensure inventory belongs to customer
-      relations: ['customer'],
-    });
+    try {
+      const inventory = await this.inventoryRepository.findOne({
+        where: { id, customer: { id: customer_id } },
+        relations: ['customer'],
+      });
 
-    if (!inventory) {
-      throw new NotFoundException(
-        `Inventory not found or does not belong to the customer.`,
-      );
+      if (!inventory) {
+        throw new NotFoundException(
+          `Inventory not found or does not belong to the customer.`,
+        );
+      }
+
+      // Delete associated thumbnail file
+      if (inventory.thumbnailImageUrl) {
+        await deleteFileIfExists(inventory.thumbnailImageUrl);
+      }
+
+      // Delete database record
+      return await this.inventoryRepository.remove(inventory);
+    } catch (error) {
+      throw error;
     }
-
-    return await this.inventoryRepository.remove(inventory);
   }
 
   async addInventorySize(
