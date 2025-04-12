@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Inventory } from './entities/inventory.entity';
 import { InventorySize } from './entities/inventory-size.entity';
-import { Customer } from '../customers/customers.entity';
+import { Customer } from '../customers/entities/customers.entity';
 import { InventoryService } from './inventory.service';
 import { InventoryController } from './inventory.controller';
 

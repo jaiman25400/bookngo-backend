@@ -6,6 +6,9 @@ import { ValidationPipe } from '@nestjs/common';
 import { JwtAuthGuard } from './modules/auth/auth.guards';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
+import * as express from 'express';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,16 +18,24 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     credentials: true,
+    exposedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Enable global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      transform: true, // Automatically transform payloads to DTO instances
-      whitelist: true, // Strip properties that are not in the DTO
-      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are found
+      transform: true,
+      whitelist: true,
     }),
   );
+
+  const uploadsDir = join(process.cwd(), 'uploads');
+  if (!existsSync(uploadsDir)) {
+    mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+
   // ✅ Correctly resolve dependencies for JwtAuthGuard
   const reflector = app.get(Reflector);
   const jwtService = app.get(JwtService);

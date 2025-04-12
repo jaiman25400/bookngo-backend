@@ -8,8 +8,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateActivityZoneDto } from './dto/create-activity-zone.dto';
 import { UpdateActivityZoneDto } from './dto/update-activity-zone.dto';
-import { Customer } from '../customers/customers.entity';
+import { Customer } from '../customers/entities/customers.entity';
 import { ActivityZone } from './entities/activity-zone.entity';
+import {
+  deleteFileIfExists,
+  deleteMultipleFilesIfExist,
+} from 'src/utils/common.helper';
 
 @Injectable()
 export class ActivityZonesService {
@@ -21,10 +25,12 @@ export class ActivityZonesService {
   ) {}
 
   async create(
-    createActivityZoneDto: CreateActivityZoneDto & { customer_id: number },
+    createData: CreateActivityZoneDto & {
+      zone_thumbnail_image?: string;
+      zone_image_gallery?: string[];
+    },
+    customer_id: number,
   ): Promise<ActivityZone> {
-    const { customer_id, ...zoneData } = createActivityZoneDto;
-
     // Validate customer existence
     const customer = await this.customerRepository.findOne({
       where: { id: customer_id },
@@ -35,14 +41,16 @@ export class ActivityZonesService {
 
     try {
       // Create and save the Activity Zone
-      const activityZone = this.activityZoneRepository.create({
-        ...zoneData,
-        customer,
+      const zone = this.activityZoneRepository.create({
+        ...createData,
+        customer: customer,
       });
-      return await this.activityZoneRepository.save(activityZone);
+
+      return await this.activityZoneRepository.save(zone);
     } catch (error) {
+      console.error('Database Error:', error);
       throw new InternalServerErrorException(
-        'Error occurred while saving Activity Zone',
+        'Failed to save activity zone. Please check your input data.',
       );
     }
   }
@@ -66,11 +74,16 @@ export class ActivityZonesService {
     return `This action returns a #${id} activityZone`;
   }
 
-  async update(id: number, updateActivityZoneDto: UpdateActivityZoneDto) {
+  async update(
+    id: number,
+    updateActivityZoneDto: UpdateActivityZoneDto & {
+      zone_thumbnail_image?: string;
+      zone_image_gallery?: string[];
+    },
+  ) {
     try {
-      console.log('Update Service:', updateActivityZoneDto);
+      console.log('Update Zone Svc :', updateActivityZoneDto);
 
-      // Check if the activity zone exists
       const activityZone = await this.activityZoneRepository.findOne({
         where: { id },
       });
@@ -79,11 +92,25 @@ export class ActivityZonesService {
         throw new NotFoundException(`Activity zone with ID ${id} not found`);
       }
 
-      // Update the entity
-      await this.activityZoneRepository.update(id, updateActivityZoneDto);
+      // Handle thumbnail update
+      if (updateActivityZoneDto.zone_thumbnail_image !== undefined) {
+        await deleteFileIfExists(activityZone.zone_thumbnail_image);
+        activityZone.zone_thumbnail_image =
+          updateActivityZoneDto.zone_thumbnail_image;
+      }
 
-      // Return the updated entity
-      return this.activityZoneRepository.findOne({ where: { id } });
+      // Handle gallery update
+      if (updateActivityZoneDto.zone_image_gallery !== undefined) {
+        await deleteMultipleFilesIfExist(activityZone.zone_image_gallery);
+        activityZone.zone_image_gallery =
+          updateActivityZoneDto.zone_image_gallery;
+      }
+
+      // Update other fields
+      Object.assign(activityZone, updateActivityZoneDto);
+
+      // Save and return updated entity
+      return await this.activityZoneRepository.save(activityZone);
     } catch (error) {
       console.error('Error updating activity zone:', error);
       throw new InternalServerErrorException('Failed to update activity zone');
@@ -92,7 +119,6 @@ export class ActivityZonesService {
 
   async remove(id: number) {
     try {
-      // Check if the activity zone exists
       const activityZone = await this.activityZoneRepository.findOne({
         where: { id },
       });
@@ -101,10 +127,21 @@ export class ActivityZonesService {
         throw new NotFoundException(`Activity zone with ID ${id} not found`);
       }
 
+      if (activityZone.zone_thumbnail_image !== undefined) {
+        await deleteFileIfExists(activityZone.zone_thumbnail_image);
+      }
+
+      // Handle gallery update
+      if (activityZone.zone_image_gallery !== undefined) {
+        await deleteMultipleFilesIfExist(activityZone.zone_image_gallery);
+      }
+
       // Delete the entity
       await this.activityZoneRepository.delete(id);
 
-      return { message: `Activity zone with ID ${id} deleted successfully` };
+      return {
+        message: `Activity zone with ID ${id} and associated files deleted successfully`,
+      };
     } catch (error) {
       console.error('Error deleting activity zone:', error);
       throw new InternalServerErrorException('Failed to delete activity zone');

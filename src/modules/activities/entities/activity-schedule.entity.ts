@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Activity } from './activity.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity('activity_schedules')
 export class ActivitySchedule {
@@ -21,6 +22,7 @@ export class ActivitySchedule {
   @Column({ default: false })
   is_holiday: boolean;
 
+  @Exclude() // Add this decorator
   @ManyToOne(() => Activity, (activity) => activity.schedules, {
     onDelete: 'CASCADE',
   })

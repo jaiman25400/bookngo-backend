@@ -1,18 +1,22 @@
-import { IsNotEmpty, IsString, IsInt, IsOptional } from 'class-validator';
+import { IsOptional, IsString, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateInventorySizeDto {
-  @IsOptional() // The 'id' field is optional for new sizes but required for updates.
+  // Optional field to support updating existing sizes
+  @IsOptional()
   @IsInt()
-  id?: number; // Optional field for updating an existing size
-  
-  @IsOptional() // The 'id' field is optional for new sizes but required for updates.
-//  @IsNotEmpty()
+  id?: number;
+
+  @IsOptional()
   @IsString()
   size: string;
 
-  @IsOptional() // The 'id' field is optional for new sizes but required for updates.
- // @IsNotEmpty()
+  @IsOptional()
   @Type(() => Number) // Automatically converts string to number
   quantity: number;
+
+  // Optional descriptive field for the inventory size
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
