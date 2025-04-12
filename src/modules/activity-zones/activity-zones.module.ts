@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ActivityZonesService } from './activity-zones.service';
 import { ActivityZonesController } from './activity-zones.controller';
 import { ActivityZone } from './entities/activity-zone.entity';
-import { Customer } from '../customers/customers.entity';
+import { Customer } from '../customers/entities/customers.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({

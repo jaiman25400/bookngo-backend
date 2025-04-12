@@ -8,9 +8,8 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Customer } from '../../customers/customers.entity';
+import { Customer } from '../../customers/entities/customers.entity';
 import { InventorySize } from './inventory-size.entity';
-// import { ActivityInventory } from '../../activities/entities/activities-inventory.entity';
 
 @Entity('inventories')
 export class Inventory {
@@ -36,18 +35,22 @@ export class Inventory {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   rental_price_per_hour: number; // ✅ Rental price per hour
 
+  // Additional descriptive information about the inventory
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
+  // URL to the inventory's thumbnail image
+  @Column({
+    type: 'varchar',
+    nullable: true,
+  })
+  thumbnailImageUrl: string | null; // Add union type with null
+
   // Relation: Inventory can have multiple sizes
   @OneToMany(() => InventorySize, (inventorySize) => inventorySize.inventory, {
     cascade: true,
   })
   sizes: InventorySize[];
-
-  // Relation: This inventory might be used in one or more activities
-  // @OneToMany(
-  //   () => ActivityInventory,
-  //   (activityInventory) => activityInventory.inventory,
-  // )
-  // activityInventories: ActivityInventory[];
 
   @CreateDateColumn()
   created_at: Date;

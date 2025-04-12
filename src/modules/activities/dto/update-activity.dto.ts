@@ -1,31 +1,16 @@
 // src/activities/dto/update-activity.dto.ts
-import { IsArray, IsBoolean, IsDate, IsNumber, IsOptional, IsString, ValidateNested, Matches } from 'class-validator';
-import { Type } from 'class-transformer';
-
-class ActivityScheduleDto {
-  @IsString()
-  day: string;
-
-  @IsOptional()
-  @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)
-  start_time?: string;
-
-  @IsOptional()
-  @Matches(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/)
-  end_time?: string;
-
-  @IsBoolean()
-  is_24hours: boolean;
-
-  @IsBoolean()
-  is_holiday: boolean;
-}
-
-class ActivityHolidayDto {
-  @IsDate()
-  @Type(() => Date)
-  date: Date;
-}
+import {
+  IsArray,
+  IsBoolean,
+  IsDate,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsEnum,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { AgeGroup, BookingType } from '../enums/activity-type.enum';
+import { BadRequestException } from '@nestjs/common';
 
 export class UpdateActivityDto {
   @IsOptional()
@@ -33,11 +18,17 @@ export class UpdateActivityDto {
   activity_name?: string;
 
   @IsOptional()
+  @IsString()
+  activity_description: string;
+
+  @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   base_price?: number;
 
   @IsOptional()
   @IsNumber()
+  @Type(() => Number)
   duration_hours?: number;
 
   @IsOptional()
@@ -51,20 +42,60 @@ export class UpdateActivityDto {
   end_date?: Date;
 
   @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   is_active?: boolean;
 
   @IsOptional()
+  @IsEnum(AgeGroup)
+  age_group?: AgeGroup | null;
+
+  @IsOptional()
+  @IsEnum(BookingType)
+  booking_type?: BookingType;
+
+  @IsOptional()
+  @IsString()
+  activity_tagline?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  requires_waiver?: boolean;
+
+  @IsOptional()
+  safety_instructions?: string;
+
+  @IsOptional()
   @IsArray()
-  zone_ids?: number[];
+  @Transform(({ value }) => {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      throw new BadRequestException('Invalid JSON format for schedules');
+    }
+  })
+  zone_id?: string;
 
   @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => ActivityScheduleDto)
-  schedules?: ActivityScheduleDto[];
+  @IsArray()
+  @Transform(({ value }) => {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      throw new BadRequestException('Invalid JSON format for schedules');
+    }
+  })
+  schedules?: string;
 
   @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => ActivityHolidayDto)
-  holidays?: ActivityHolidayDto[];
+  @IsArray()
+  @Transform(({ value }) => {
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      throw new BadRequestException('Invalid JSON format for schedules');
+    }
+  })
+  holidays?: string;
 }

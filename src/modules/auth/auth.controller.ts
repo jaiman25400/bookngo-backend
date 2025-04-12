@@ -30,6 +30,7 @@ export class AuthController {
     @Res() res: Response,
   ) {
     try {
+      console.log("Login DTO ",loginDto)
       const { email, password } = loginDto;
 
       if (!email || !password) {

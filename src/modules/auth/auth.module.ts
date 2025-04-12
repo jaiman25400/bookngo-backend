@@ -1,18 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { CustomersService } from '../customers/customers.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Customer } from '../customers/customers.entity';
 import { CustomerUser } from '../customer-users/customers-users.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config'; // Import ConfigModule and ConfigService
 import { CustomerUsersService } from '../customer-users/customer-users.service';
 import { JwtAuthGuard } from './auth.guards';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Customer, CustomerUser]),
+    TypeOrmModule.forFeature([ CustomerUser]),
     JwtModule.registerAsync({
       imports: [ConfigModule], // Ensure ConfigModule is imported
       useFactory: async (configService: ConfigService) => ({
@@ -26,7 +24,6 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
   controllers: [AuthController],
   providers: [
     AuthService,
-    CustomersService,
     CustomerUsersService,
     JwtAuthGuard,
   ],

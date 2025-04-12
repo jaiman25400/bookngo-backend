@@ -1,6 +1,5 @@
 import { Injectable, UnauthorizedException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { CustomersService } from '../customers/customers.service';
 import { ConfigService } from '@nestjs/config';
 import { CustomerUsersService } from '../customer-users/customer-users.service';
 import * as bcrypt from 'bcryptjs';
@@ -10,7 +9,6 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly customerService: CustomersService,
     private readonly customerUserService: CustomerUsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,

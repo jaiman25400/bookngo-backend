@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm';
+import { CustomerDetail } from './customers-detail.entity';
 
 @Entity('customers')
 export class Customer {
@@ -7,6 +8,9 @@ export class Customer {
 
   @Column({ unique: true })
   customer_name: string;  // Business name (e.g., "Boler Mountain")
+
+  @OneToOne(() => CustomerDetail, (detail) => detail.customer)
+  detail: CustomerDetail; // Bidirectional relationship
 
   @Column('enum', { enum: ['Winter', 'Summer', 'Events'], array: true, default: '{}' })
   business_type: string[];
