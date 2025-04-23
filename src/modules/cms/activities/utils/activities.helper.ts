@@ -4,7 +4,7 @@ import {
 } from 'src/utils/common.helper';
 import { UpdateActivityDto } from '../dto/update-activity.dto';
 import { Activity } from '../entities/activity.entity';
-import { ActivityZone } from 'src/modules/activity-zones/entities/activity-zone.entity';
+import { ActivityZone } from 'src/modules/cms/activity-zones/entities/activity-zone.entity';
 import { In, Repository } from 'typeorm';
 import { ActivitySchedule } from '../entities/activity-schedule.entity';
 import { ActivityHoliday } from '../entities/activity-holiday.entity';

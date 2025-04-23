@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config'; // Import ConfigService
 import * as cookieParser from 'cookie-parser'; // ✅ Import cookie-parser
 import { ValidationPipe } from '@nestjs/common';
-import { JwtAuthGuard } from './modules/auth/auth.guards';
+import { JwtAuthGuard } from './modules/cms/auth/auth.guards';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import * as express from 'express';
