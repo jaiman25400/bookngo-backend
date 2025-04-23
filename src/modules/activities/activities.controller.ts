@@ -43,7 +43,7 @@ export class ActivitiesController {
       ],
       {
         storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'activity'),
+          destination: join(process.cwd(), 'uploads', 'CMS', 'activity'),
           filename: (req, file, cb) => {
             const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
             cb(null, uniqueName);
@@ -70,11 +70,11 @@ export class ActivitiesController {
     // Handle file paths
     const filePaths = {
       activity_thumbnail_image: uploadedFiles.activity_thumbnail_image?.[0]
-        ? `/uploads/activity/${uploadedFiles.activity_thumbnail_image[0].filename}`
+        ? `/uploads/CMS/activity/${uploadedFiles.activity_thumbnail_image[0].filename}`
         : undefined,
       activity_image_gallery:
         uploadedFiles.activity_image_gallery?.map(
-          (f) => `/uploads/activity/${f.filename}`,
+          (f) => `/uploads/CMS/activity/${f.filename}`,
         ) ?? undefined, // Return null if the left side is undefined/null
     };
 
@@ -93,7 +93,7 @@ export class ActivitiesController {
       ],
       {
         storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'activity'),
+          destination: join(process.cwd(), 'uploads', 'CMS', 'activity'),
           filename: (req, file, cb) => {
             const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
             cb(null, uniqueName);
@@ -128,14 +128,14 @@ export class ActivitiesController {
 
       // Handle thumbnail file
       if (uploadedFiles?.activity_thumbnail_image?.[0]) {
-        filePaths.activity_thumbnail_image = `/uploads/activity/${uploadedFiles.activity_thumbnail_image[0].filename}`;
+        filePaths.activity_thumbnail_image = `/uploads/CMS/activity/${uploadedFiles.activity_thumbnail_image[0].filename}`;
       }
 
       // Handle gallery files
       if (uploadedFiles?.activity_image_gallery?.length) {
         filePaths.activity_image_gallery =
           uploadedFiles.activity_image_gallery.map(
-            (f) => `/uploads/activity/${f.filename}`,
+            (f) => `/uploads/CMS/activity/${f.filename}`,
           );
       }
 

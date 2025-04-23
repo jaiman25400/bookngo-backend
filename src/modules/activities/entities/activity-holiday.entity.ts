@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Activity } from './activity.entity';
 
-@Entity('activity_holidays')
+@Entity({ name : 'activity_holidays', schema : 'BookNGo_CMS'})
 export class ActivityHoliday {
   @PrimaryGeneratedColumn()
   id: number;

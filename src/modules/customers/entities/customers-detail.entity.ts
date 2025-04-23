@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { Customer } from './customers.entity';
 
-@Entity('customer_details')
+@Entity({ name : 'customer_details', schema : 'BookNGo_CMS'})
 export class CustomerDetail {
   @PrimaryGeneratedColumn()
   id: number;
@@ -21,7 +21,7 @@ export class CustomerDetail {
   @Column('text', { nullable: true })
   customer_display_name: string;
 
-  @Column('text', { nullable: true })
+  @Column('text', { name: 'home_tagLine', nullable: true })
   home_tagLine: string;
 
   @Column('text', { nullable: true })

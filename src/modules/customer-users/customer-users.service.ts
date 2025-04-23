@@ -27,42 +27,39 @@ export class CustomerUsersService {
     customerId: number,
     role: string,
   ) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    
-    try {
-      // Check for existing active user BEFORE transaction
-      const existingUser = await this.customerUserRepository.findOne({
-        where: { email },
-      });
-  
-      if (existingUser?.is_active) {
-        throw new BadRequestException('User already exists and is active');
-      }
-  
-      await queryRunner.startTransaction();
-  
-      // Rest of your existing logic...
-      // (token generation, user creation/update, email sending)
-  
-      await queryRunner.commitTransaction();
-      return { message: 'Invitation sent successfully' };
-    } catch (error) {
-      if (queryRunner.isTransactionActive) {
-        await queryRunner.rollbackTransaction();
-      }
-  
-      // Preserve specific error types
-      if (error instanceof BadRequestException) {
-        throw error; // Will return 400 to client
-      }
-  
-      console.error('Server Error:', error);
-      throw new InternalServerErrorException('Failed to process invitation');
-    } finally {
-      await queryRunner.release();
+    // Check for existing user
+    const existingUser = await this.customerUserRepository.findOne({
+      where: { email },
+    });
+    if (existingUser?.is_active) {
+      throw new BadRequestException('User already exists and is active');
     }
+
+    // Generate a secure token
+    const token = crypto.randomBytes(32).toString('hex');
+    let user: CustomerUser;
+
+    // Create or update user entity
+    if (existingUser) {
+      existingUser.password_token = token;
+      user = await this.customerUserRepository.save(existingUser);
+    } else {
+      user = this.customerUserRepository.create({
+        email,
+        name,
+        customer: { id: customerId },
+        role,
+        password_token: token,
+        is_active: false,
+      });
+      user = await this.customerUserRepository.save(user);
+    }
+
+    // Send invitation email
+    await this.sendInviteEmail(email, token);
+    return { message: 'Invitation sent successfully' };
   }
+
   // 2️⃣ Send email securely using environment variables
   async sendInviteEmail(email: string, token: string) {
     try {
@@ -76,7 +73,7 @@ export class CustomerUsersService {
         },
       });
 
-      const resetLink = `${this.configService.get<string>('FRONTEND_URL')}/team/setup-password?token=${token}`;
+      const resetLink = `${this.configService.get<string>('FRONTEND_URL')}/setup-password?token=${token}`;
 
       const mailOptions = {
         from: this.configService.get<string>('EMAIL_FROM'),

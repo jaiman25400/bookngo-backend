@@ -23,7 +23,7 @@ export enum ZoneStatus {
   CLOSED = 'closed',
 }
 
-@Entity('activity_zones')
+@Entity({ name: 'activity_zones', schema: 'BookNGo_CMS' })
 export class ActivityZone {
   @PrimaryGeneratedColumn()
   id: number;
@@ -36,7 +36,7 @@ export class ActivityZone {
 
   @Column({ type: 'enum', enum: AgeGroup, nullable: true })
   age_group: AgeGroup | null;
-  
+
   @Column({ nullable: true })
   zone_tagline: string;
 

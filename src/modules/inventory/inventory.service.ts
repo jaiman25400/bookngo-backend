@@ -45,7 +45,7 @@ export class InventoryService {
 
       // Generate thumbnail URL if file exists
       const thumbnailImageUrl = thumbnail
-        ? `/uploads/inventory/${thumbnail.filename}`
+        ? `/uploads/CMS/inventory/${thumbnail.filename}`
         : null;
 
       // Create inventory entry including new optional fields
@@ -115,7 +115,7 @@ export class InventoryService {
       if (thumbnail) {
         await deleteFileIfExists(inventory.thumbnailImageUrl);
         // Update with new file path
-        inventory.thumbnailImageUrl = `/uploads/inventory/${thumbnail.filename}`;
+        inventory.thumbnailImageUrl = `/uploads/CMS/inventory/${thumbnail.filename}`;
       }
 
       // Step 2: Update the main inventory fields
@@ -159,7 +159,7 @@ export class InventoryService {
     } catch (error) {
       // Clean up uploaded file if error occurs
       if (thumbnail) {
-        const newFilePath = join(process.cwd(), 'uploads', thumbnail.filename);
+        const newFilePath = join(process.cwd(), 'uploads', 'CMS', thumbnail.filename);
         if (existsSync(newFilePath)) {
           unlinkSync(newFilePath);
         }

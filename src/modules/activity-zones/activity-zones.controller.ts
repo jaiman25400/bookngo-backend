@@ -33,7 +33,7 @@ export class ActivityZonesController {
       ],
       {
         storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'zones'),
+          destination: join(process.cwd(), 'uploads', 'CMS', 'zones'),
           filename: (req, file, cb) => {
             const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
             cb(null, uniqueName);
@@ -68,13 +68,13 @@ export class ActivityZonesController {
 
       // Handle thumbnail file
       if (uploadedFiles?.zone_thumbnail_image?.[0]) {
-        filePaths.zone_thumbnail_image = `/uploads/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
+        filePaths.zone_thumbnail_image = `/uploads/CMS/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
       }
 
       // Handle gallery files
       if (uploadedFiles?.zone_image_gallery?.length) {
         filePaths.zone_image_gallery = uploadedFiles.zone_image_gallery.map(
-          (f) => `/uploads/zones/${f.filename}`,
+          (f) => `/uploads/CMS/zones/${f.filename}`,
         );
       }
 
@@ -118,7 +118,7 @@ export class ActivityZonesController {
       ],
       {
         storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'zones'),
+          destination: join(process.cwd(), 'uploads', 'CMS', 'zones'),
           filename: (req, file, cb) => {
             const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
             cb(null, uniqueName);
@@ -144,13 +144,13 @@ export class ActivityZonesController {
 
     // Handle thumbnail file
     if (uploadedFiles?.zone_thumbnail_image?.[0]) {
-      filePaths.zone_thumbnail_image = `/uploads/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
+      filePaths.zone_thumbnail_image = `/uploads/CMS/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
     }
 
     // Handle gallery files
     if (uploadedFiles?.zone_image_gallery?.length) {
       filePaths.zone_image_gallery = uploadedFiles.zone_image_gallery.map(
-        (f) => `/uploads/zones/${f.filename}`,
+        (f) => `/uploads/CMS/zones/${f.filename}`,
       );
     }
 

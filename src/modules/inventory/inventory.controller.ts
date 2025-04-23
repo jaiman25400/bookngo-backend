@@ -26,7 +26,7 @@ export class InventoryController {
   @UseInterceptors(
     FileInterceptor('thumbnail', {
       storage: diskStorage({
-        destination: join(process.cwd(), 'uploads', 'inventory'), // Absolute path
+        destination: join(process.cwd(), 'uploads', 'CMS', 'inventory'), // Absolute path
         filename: (req, file, cb) => {
           const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
           cb(null, uniqueName);
@@ -60,7 +60,7 @@ export class InventoryController {
   @UseInterceptors(
     FileInterceptor('thumbnail', {
       storage: diskStorage({
-        destination: join(process.cwd(), 'uploads', 'inventory'),
+        destination: join(process.cwd(), 'uploads', 'CMS', 'inventory'),
         filename: (req, file, cb) => {
           const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
           cb(null, uniqueName);

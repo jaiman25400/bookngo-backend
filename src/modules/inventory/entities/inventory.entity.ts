@@ -11,7 +11,7 @@ import {
 import { Customer } from '../../customers/entities/customers.entity';
 import { InventorySize } from './inventory-size.entity';
 
-@Entity('inventories')
+@Entity({ name : 'inventories', schema : 'BookNGo_CMS'})
 export class Inventory {
   @PrimaryGeneratedColumn()
   id: number;

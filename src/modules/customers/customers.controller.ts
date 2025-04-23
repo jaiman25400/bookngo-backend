@@ -45,7 +45,7 @@ export class CustomerController {
       ],
       {
         storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'customer'),
+          destination: join(process.cwd(), 'uploads', 'CMS', 'customer'),
           filename: (req, file, cb) => {
             const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
             cb(null, uniqueName);
@@ -66,11 +66,11 @@ export class CustomerController {
     try {
       const filePaths = {
         home_image_url: uploadedFiles.home_image_url?.[0]
-          ? `/uploads/customer/${uploadedFiles.home_image_url[0].filename}`
+          ? `/uploads/CMS/customer/${uploadedFiles.home_image_url[0].filename}`
           : undefined,
         home_image_gallery:
           uploadedFiles.home_image_gallery?.map(
-            (f) => `/uploads/customer/${f.filename}`,
+            (f) => `/uploads/CMS/customer/${f.filename}`,
           ) ?? undefined,
       };
 
@@ -96,7 +96,7 @@ export class CustomerController {
   //     ],
   //     {
   //       storage: diskStorage({
-  //         destination: join(process.cwd(), 'uploads', 'customer'),
+  //         destination: join(process.cwd(), 'uploads', 'CMS', 'customer'),
   //         filename: (req, file, cb) => {
   //           const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
   //           cb(null, uniqueName);
@@ -118,11 +118,11 @@ export class CustomerController {
   //     // Handle file paths
   //     const filePaths = {
   //       home_image_url: uploadedFiles.home_image_url?.[0]
-  //         ? `/uploads/customer/${uploadedFiles.home_image_url[0].filename}`
+  //         ? `/uploads/CMS/customer/${uploadedFiles.home_image_url[0].filename}`
   //         : undefined,
   //       home_image_gallery:
   //         uploadedFiles.home_image_gallery?.map(
-  //           (f) => `/uploads/customer/${f.filename}`,
+  //           (f) => `/uploads/CMS/customer/${f.filename}`,
   //         ) ?? undefined, // Return null if the left side is undefined/null
   //     };
 

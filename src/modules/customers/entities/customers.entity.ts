@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm';
 import { CustomerDetail } from './customers-detail.entity';
 
-@Entity('customers')
+@Entity({ name : 'customers', schema : 'BookNGo_CMS'})
 export class Customer {
   @PrimaryGeneratedColumn()
   id: number;

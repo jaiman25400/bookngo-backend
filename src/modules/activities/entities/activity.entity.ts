@@ -17,7 +17,7 @@ import { ActivityHoliday } from './activity-holiday.entity';
 import { BookingType, AgeGroup } from '../enums/activity-type.enum';
 import { Exclude } from 'class-transformer';
 
-@Entity('activities')
+@Entity({ name: 'activities', schema: 'BookNGo_CMS' })
 export class Activity {
   @PrimaryGeneratedColumn()
   id: number;

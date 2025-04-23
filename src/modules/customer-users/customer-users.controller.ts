@@ -24,6 +24,7 @@ export class CustomerUsersController {
   /**
    * Invite user & send email
    */
+
   @Post('invite')
   async inviteUser(@Body() inviteUserDto: InviteUserDto, @Request() req) {
     try {
@@ -47,6 +48,30 @@ export class CustomerUsersController {
     }
   }
 
+  @Public()
+  @Post('inviteUserByAdmin')
+  async inviteUserByAdmin(@Body() inviteUserDto: any) {
+    try {
+      console.log(inviteUserDto);
+      const result = await this.customerUsersService.inviteUser(
+        inviteUserDto.email,
+        inviteUserDto.name,
+        inviteUserDto.customer,
+        inviteUserDto.role,
+      );
+
+      return {
+        message: 'Invitation sent successfully',
+        data: result,
+      };
+    } catch (error) {
+      // Preserve existing HTTP exceptions
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to send invitation');
+    }
+  }
   /**
    * Set password after user clicks the email link
    */

@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Activity } from './activity.entity';
 import { Exclude } from 'class-transformer';
 
-@Entity('activity_schedules')
+@Entity({name:'activity_schedules', schema :'BookNGo_CMS'})
 export class ActivitySchedule {
   @PrimaryGeneratedColumn()
   id: number;
