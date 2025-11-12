@@ -113,8 +113,7 @@ export class ActivitiesController {
     },
   ) {
     try {
-      console.log('Req User :', req.user);
-
+      console.log(updateActivityDto)
       const customer_id = req.user?.customer; // Get the customer_id from the user data
 
       if (!customer_id) {

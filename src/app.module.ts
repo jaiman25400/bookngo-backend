@@ -10,6 +10,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ActivitiesModule } from './modules/cms/activities/activities.module';
 import { ActivityZonesModule } from './modules/cms/activity-zones/activity-zones.module';
+import { SkiSlopesModule } from './modules/user/ski-slopes/ski-slopes.module';
+import { VendorsModule } from './modules/user/vendors/vendors.module';
+import { BookingsModule } from './modules/user/bookings/bookings.module';
 
 @Module({
   imports: [
@@ -22,9 +25,12 @@ import { ActivityZonesModule } from './modules/cms/activity-zones/activity-zones
     CustomerUsersModule,
     InventoryModule,
     ActivitiesModule,
-    ActivityZonesModule
+    ActivityZonesModule,
+    SkiSlopesModule,
+    VendorsModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {} 
+export class AppModule {}

@@ -16,7 +16,10 @@ async function bootstrap() {
 
   // ✅ Enable CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: [
+      process.env.FRONTEND_URL,
+      process.env.CMS_FRONTEND_URL
+    ].filter(Boolean), // This removes any undefined/null values
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
   });
@@ -43,7 +46,7 @@ async function bootstrap() {
 
   app.use(cookieParser()); // ✅ Enable cookie-parser
 
-  const port = configService.get('PORT') || 3000; // Use ConfigService to get the port
+  const port = 3000;
 
   await app.listen(port);
 }

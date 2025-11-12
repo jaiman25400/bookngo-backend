@@ -16,6 +16,12 @@ export class ActivitySchedule {
   @Column({ type: 'time', nullable: true })
   end_time: string;
 
+  @Column( {nullable: true} )
+  duration: string;
+
+  @Column( {nullable: true} )
+  price: string;
+
   @Column({ default: false })
   is_24hours: boolean;
 

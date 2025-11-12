@@ -75,7 +75,7 @@ export class CustomerController {
       };
 
       return await this.customerService.updateCustomerDetail(
-        req.user.customer.id,
+        req.user.customer,
         { ...updateCustomerDetailDto, ...filePaths },
       );
     } catch (error) {

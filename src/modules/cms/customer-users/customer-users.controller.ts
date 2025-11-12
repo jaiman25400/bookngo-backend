@@ -52,7 +52,7 @@ export class CustomerUsersController {
   @Post('inviteUserByAdmin')
   async inviteUserByAdmin(@Body() inviteUserDto: any) {
     try {
-      console.log(inviteUserDto);
+      console.log('Body Invite User',inviteUserDto);
       const result = await this.customerUsersService.inviteUser(
         inviteUserDto.email,
         inviteUserDto.name,

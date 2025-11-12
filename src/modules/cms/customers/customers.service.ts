@@ -72,6 +72,7 @@ export class CustomersService {
     },
   ): Promise<CustomerDetail> {
     try {
+      console.log('Cust ID :',customerId)
       const customer = await this.customerRepository.findOne({
         where: { id: customerId },
         relations: ['detail'],
@@ -80,7 +81,6 @@ export class CustomersService {
       if (!customer || !customer.detail) {
         throw new NotFoundException('Customer or customer detail not found');
       }
-
       const detail = customer.detail;
 
       // ✅ Handle thumbnail update

@@ -15,7 +15,7 @@ import { CreateActivityDto } from './dto/create-activity.dto';
 import { Customer } from '../customers/entities/customers.entity';
 import { ActivityZone } from '../activity-zones/entities/activity-zone.entity';
 import { In, DataSource } from 'typeorm';
-import { BookingType } from './enums/activity-type.enum';
+import { ActivityType, BookingType } from './enums/activity-type.enum';
 import {
   handleFileUpdates,
   updateHolidays,
@@ -71,12 +71,10 @@ export class ActivitiesService {
       throw new BadRequestException('Start date must be before end date');
     }
 
-    // Validate customer existence
-    console.log('Act SVC :', createData);
-
     const customer = await this.customerRepository.findOne({
       where: { id: customer_id },
     });
+
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${customer_id} not found`);
     }
@@ -171,6 +169,18 @@ export class ActivitiesService {
         }
       }
 
+      // Validate activity_type
+      let activityType: ActivityType = ActivityType.SKIING; // Default value
+      if (createData.activity_type) {
+        if (Object.values(ActivityType).includes(createData.activity_type)) {
+          activityType = createData.activity_type;
+        } else {
+          throw new BadRequestException(
+            `Invalid activity_type: ${createData.activity_type}. Valid types: ${Object.values(ActivityType).join(', ')}`,
+          );
+        }
+      }
+
       // Construct the activity data explicitly.
       const activityData = {
         customer,
@@ -185,12 +195,15 @@ export class ActivitiesService {
         end_date: createData.end_date,
         age_group: createData.age_group,
         activity_tagline: createData.activity_tagline,
+        slot_interval_minutes: createData.slot_interval_minutes,
+        max_per_slot: createData.max_per_slot,
         activity_thumbnail_image: createData.activity_thumbnail_image,
         activity_image_gallery: createData.activity_image_gallery,
         is_active: createData.is_active,
         safety_instructions: createData.safety_instructions,
         requires_waiver: createData.requires_waiver,
         booking_type: bookingType,
+        activity_type: activityType,
       };
 
       // Create and save the new activity entity
@@ -226,7 +239,6 @@ export class ActivitiesService {
     },
   ): Promise<any> {
     try {
-
       const activity = await this.activityRepository.findOne({
         where: { id },
         relations: ['zones', 'schedules', 'holidays'],

@@ -9,12 +9,17 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Customer } from '../../customers/entities/customers.entity';
 import { ActivityZone } from '../../activity-zones/entities/activity-zone.entity';
 import { ActivitySchedule } from './activity-schedule.entity';
 import { ActivityHoliday } from './activity-holiday.entity';
-import { BookingType, AgeGroup } from '../enums/activity-type.enum';
+import {
+  BookingType,
+  AgeGroup,
+  ActivityType,
+} from '../enums/activity-type.enum';
 import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'activities', schema: 'BookNGo_CMS' })
@@ -23,6 +28,7 @@ export class Activity {
   id: number;
 
   @ManyToOne(() => Customer, (customer) => customer.id, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'customerId' }) // Add this decorator
   customer: Customer;
 
   // ✅ Many-to-Many relationship with Zones
@@ -44,7 +50,7 @@ export class Activity {
   @OneToMany(() => ActivityHoliday, (holiday) => holiday.activity, {
     cascade: true,
     onDelete: 'CASCADE', // Ensures holidays are deleted if activity is deleted
-    orphanedRowAction: 'delete' // Automatically removes orphaned holidays
+    orphanedRowAction: 'delete', // Automatically removes orphaned holidays
   })
   holidays: ActivityHoliday[];
 
@@ -53,6 +59,19 @@ export class Activity {
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   base_price: number; // ✅ Activity price
+
+  @Column({
+    type: 'enum',
+    enum: ActivityType,
+    default: ActivityType.SKIING,
+  })
+  activity_type: ActivityType;
+
+  @Column({ type: 'int', default: 60 }) // Default: 60 minutes
+  slot_interval_minutes: number;  // Add this column
+
+  @Column({ type: 'int', default: 10 }) // Default: 10 users
+  max_per_slot: number;  // Add this column
 
   @Column({ type: 'int' })
   duration_hours: number;
@@ -86,6 +105,9 @@ export class Activity {
 
   @Column({ type: 'boolean', default: false })
   requires_waiver: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  provides_rentals: boolean;
 
   @Column({
     type: 'enum',

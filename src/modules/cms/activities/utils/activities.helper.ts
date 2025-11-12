@@ -42,10 +42,14 @@ export async function updateScalarFields(
     'is_active',
     'booking_type',
     'activity_tagline',
+    'slot_interval_minutes',
+    'max_per_slot',
     'activity_description',
     'safety_instructions',
     'requires_waiver',
+    'provides_rentals',
     'age_group',
+    'activity_type',
     'activity_image_gallery',
     'activity_thumbnail_image',
   ];
@@ -97,6 +101,8 @@ export async function updateSchedules(
       day: scheduleDto.day,
       start_time: scheduleDto.start_time || null,
       end_time: scheduleDto.end_time || null,
+      duration: scheduleDto.duration || null,
+      price: scheduleDto.price || null,
       is_24hours: scheduleDto.is_24hours ?? false,
       is_holiday: scheduleDto.is_holiday ?? false,
       // Remove the direct activity assignment

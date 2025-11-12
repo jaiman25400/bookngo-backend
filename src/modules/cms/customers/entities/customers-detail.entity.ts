@@ -4,10 +4,12 @@ import {
   Column,
   OneToOne,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Customer } from './customers.entity';
 
-@Entity({ name : 'customer_details', schema : 'BookNGo_CMS'})
+@Entity({ name: 'customer_details', schema: 'BookNGo_CMS' })
+@Unique(['customer_slug', 'customer_display_name']) // Composite unique constraint
 export class CustomerDetail {
   @PrimaryGeneratedColumn()
   id: number;
@@ -24,8 +26,17 @@ export class CustomerDetail {
   @Column('text', { name: 'home_tagLine', nullable: true })
   home_tagLine: string;
 
+  @Column('double precision', { nullable: true })
+  customer_latitude: number;
+
+  @Column('double precision', { nullable: true })
+  customer_longitude: number;
+
   @Column('text', { nullable: true })
   customer_display_email: string;
+
+  @Column('text', { nullable: true })
+  customer_slug: string;
 
   @Column('text', { nullable: true })
   customer_description: string;
@@ -50,7 +61,7 @@ export class CustomerDetail {
 
   @Column('text', { nullable: true })
   about_us: string; // Extended customer bio
-  
+
   @Column('text', { nullable: true })
   features: string; // Any additional features or special offers
 }

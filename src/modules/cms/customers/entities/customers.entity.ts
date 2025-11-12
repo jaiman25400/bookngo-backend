@@ -9,7 +9,9 @@ export class Customer {
   @Column({ unique: true })
   customer_name: string;  // Business name (e.g., "Boler Mountain")
 
-  @OneToOne(() => CustomerDetail, (detail) => detail.customer)
+  @OneToOne(() => CustomerDetail, (detail) => detail.customer, {
+    cascade: true,
+  })
   detail: CustomerDetail; // Bidirectional relationship
 
   @Column('enum', { enum: ['Winter', 'Summer', 'Events'], array: true, default: '{}' })

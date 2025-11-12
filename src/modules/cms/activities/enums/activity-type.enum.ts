@@ -9,3 +9,12 @@ export enum AgeGroup {
   ADULT = '18+',
   SENIOR = '50+',
 }
+
+export enum ActivityType {
+  SKIING = 'skiing',
+  SKATING = 'skating',
+  HIKING = 'hiking',
+  SNOWBOARDING = 'snowboarding',
+  TUBING= 'tubing'
+  // Add more as needed
+}

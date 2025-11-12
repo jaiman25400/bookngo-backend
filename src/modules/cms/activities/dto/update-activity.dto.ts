@@ -7,9 +7,15 @@ import {
   IsOptional,
   IsString,
   IsEnum,
+  Min,
+  Max,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { AgeGroup, BookingType } from '../enums/activity-type.enum';
+import {
+  ActivityType,
+  AgeGroup,
+  BookingType,
+} from '../enums/activity-type.enum';
 import { BadRequestException } from '@nestjs/common';
 
 export class UpdateActivityDto {
@@ -42,6 +48,19 @@ export class UpdateActivityDto {
   end_date?: Date;
 
   @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(24 * 60) // Max 24 hours in minutes
+  @Type(() => Number)
+  slot_interval_minutes?: number; // Add this field
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Type(() => Number)
+  max_per_slot?: number; // Add this field
+
+  @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   is_active?: boolean;
@@ -49,6 +68,10 @@ export class UpdateActivityDto {
   @IsOptional()
   @IsEnum(AgeGroup)
   age_group?: AgeGroup | null;
+
+  @IsOptional()
+  @IsEnum(ActivityType)
+  activity_type: ActivityType | null;
 
   @IsOptional()
   @IsEnum(BookingType)
@@ -62,6 +85,11 @@ export class UpdateActivityDto {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   requires_waiver?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  provides_rentals?: boolean;
 
   @IsOptional()
   safety_instructions?: string;

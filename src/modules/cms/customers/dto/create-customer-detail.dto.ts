@@ -8,6 +8,9 @@ export class CreateCustomerDetailDto {
   @IsOptional()
   customer_display_email?: string;
 
+  @IsString()
+  customer_slug?: string;
+
   @IsOptional()
   @IsString()
   customer_display_name?: string;
@@ -16,6 +19,14 @@ export class CreateCustomerDetailDto {
   @IsString()
   customer_description?: string;
 
+  @IsOptional()
+  @IsString()
+  customer_longitude?: string;
+
+  @IsOptional()
+  @IsString()
+  customer_latitude?: string;
+  
   @IsOptional()
   @IsString()
   customer_address?: string;
