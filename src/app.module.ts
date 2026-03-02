@@ -16,6 +16,7 @@ import { VendorsModule } from './modules/user/vendors/vendors.module';
 import { BookingsModule } from './modules/user/bookings/bookings.module';
 import { DashboardModule } from './modules/cms/dashboard/dashboard.module';
 import { CmsBookingsModule } from './modules/cms/bookings/bookings.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CmsBookingsModule } from './modules/cms/bookings/bookings.module';
     BookingsModule,
     DashboardModule,
     CmsBookingsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
