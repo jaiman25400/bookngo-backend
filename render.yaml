@@ -1,0 +1,14 @@
+# Render Blueprint – BookNGo Backend
+# Use Build Command in dashboard if not using Blueprint: npm install --include=dev && npm run build
+
+services:
+  - type: web
+    name: bookngo-backend
+    runtime: node
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: node dist/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Add DB_*, JWT_SECRET, FRONTEND_URL, CMS_FRONTEND_URL, etc. in Render dashboard
+      # or link a PostgreSQL instance for DB_* vars
