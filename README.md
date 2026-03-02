@@ -24,25 +24,81 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**BookNGo Backend** - A comprehensive booking platform backend for winter activity providers (primarily ski resorts). Built with NestJS, this backend serves as a common API for both CMS (customer management) and User-facing frontends.
 
-## Project setup
+### Key Features
+- Multi-tenant architecture supporting multiple ski resort customers
+- Activity management (skiing, snowboarding, etc.) with scheduling
+- Inventory/rental equipment management
+- Real-time availability checking and booking system
+- Zone-based activity organization
+- JWT-based authentication for CMS users
+- File upload system for images and media
+
+### Documentation
+- 📖 [New Developer Guide](./docs/new-developer-guide.md) - Quick start guide for new developers
+- 🏗️ [Project Architecture](./docs/project-architecture.md) - Comprehensive architecture documentation
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 12+
+- npm or yarn
+
+### Installation
 
 ```bash
+# Install dependencies
 $ npm install
+
+# Create .env file (see docs/new-developer-guide.md for template)
+# Configure database and environment variables
+
+# Start development server
+$ npm run start:dev
 ```
 
-## Compile and run the project
+The API will be available at `http://localhost:3000`
+
+### Environment Variables
+
+Create a `.env` file with the following variables:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASS=your_password
+DB_NAME=bookngo_db
+DB_SYNC=false
+JWT_SECRET=your_secret_key
+FRONTEND_URL=http://localhost:3001
+CMS_FRONTEND_URL=http://localhost:3002
+NODE_ENV=development
+```
+
+See [New Developer Guide](./docs/new-developer-guide.md) for detailed setup instructions.
+
+## Available Scripts
 
 ```bash
-# development
-$ npm run start
+# Development
+$ npm run start:dev      # Start in watch mode
+$ npm run start          # Start in production mode
+$ npm run start:prod     # Start compiled production build
 
-# watch mode
-$ npm run start:dev
+# Building
+$ npm run build          # Compile TypeScript to JavaScript
 
-# production mode
-$ npm run start:prod
+# Testing
+$ npm run test           # Run unit tests
+$ npm run test:e2e       # Run end-to-end tests
+$ npm run test:cov       # Run tests with coverage
+
+# Code Quality
+$ npm run lint           # Run ESLint
+$ npm run format         # Format code with Prettier
 ```
 
 ## Run tests
