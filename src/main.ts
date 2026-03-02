@@ -1,9 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ConfigService } from '@nestjs/config'; // Import ConfigService
 import * as cookieParser from 'cookie-parser'; // ✅ Import cookie-parser
 import { ValidationPipe } from '@nestjs/common';
-import { JwtAuthGuard } from './modules/auth/auth.guards';
+import { JwtAuthGuard } from './modules/cms/auth/auth.guards';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import * as express from 'express';
@@ -12,11 +11,12 @@ import { existsSync, mkdirSync } from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
 
   // ✅ Enable CORS
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: [process.env.FRONTEND_URL, process.env.CMS_FRONTEND_URL].filter(
+      Boolean,
+    ), // This removes any undefined/null values
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
   });
@@ -43,8 +43,8 @@ async function bootstrap() {
 
   app.use(cookieParser()); // ✅ Enable cookie-parser
 
-  const port = configService.get('PORT') || 3000; // Use ConfigService to get the port
+  const port = 3000;
 
   await app.listen(port);
 }
-bootstrap();
+void bootstrap();
