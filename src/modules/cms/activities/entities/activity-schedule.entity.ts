@@ -2,7 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Activity } from './activity.entity';
 import { Exclude } from 'class-transformer';
 
-@Entity({name:'activity_schedules', schema :'BookNGo_CMS'})
+@Entity({ name: 'activity_schedules', schema: 'BookNGo_CMS' })
 export class ActivitySchedule {
   @PrimaryGeneratedColumn()
   id: number;
@@ -16,10 +16,10 @@ export class ActivitySchedule {
   @Column({ type: 'time', nullable: true })
   end_time: string;
 
-  @Column( {nullable: true} )
+  @Column({ nullable: true })
   duration: string;
 
-  @Column( {nullable: true} )
+  @Column({ nullable: true })
   price: string;
 
   @Column({ default: false })

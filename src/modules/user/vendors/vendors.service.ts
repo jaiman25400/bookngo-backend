@@ -76,12 +76,16 @@ export class VendorsService {
       const activity = await this.ActivityRepository.findOne({
         where: { id: activityId },
         relations: ['zones', 'schedules', 'holidays'],
+        // No select restriction - returns all fields including:
+        // - activity_thumbnail_image (string)
+        // - activity_image_gallery (string[])
       });
 
       if (!activity) {
         throw new HttpException('Activity not found', HttpStatus.NOT_FOUND);
       }
 
+      // Returns full activity with both thumbnail and gallery images
       return activity;
     } catch (error) {
       console.error('Error retrieving activity:', error);

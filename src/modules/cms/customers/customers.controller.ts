@@ -86,8 +86,7 @@ export class CustomerController {
     }
   }
 
-
-    // @Post('profile')
+  // @Post('profile')
   // @UseInterceptors(
   //   FileFieldsInterceptor(
   //     [
@@ -138,6 +137,4 @@ export class CustomerController {
   //     );
   //   }
   // }
-
-  
 }

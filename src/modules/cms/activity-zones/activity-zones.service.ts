@@ -1,6 +1,5 @@
 import {
   Injectable,
-  BadRequestException,
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
@@ -63,7 +62,7 @@ export class ActivityZonesService {
       });
 
       return activityZones; // Return empty list if no records are found
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException(
         'Failed to fetch Activity Zones from the database',
       );

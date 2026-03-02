@@ -12,7 +12,6 @@ import { BookingActivityLogs } from './entities/booking_activity_logs.entity';
 import { ActivityRentalReservation } from './entities/booking_activity_rentals_logs.entity';
 import { InventorySize } from '@/modules/cms/inventory/entities/inventory-size.entity';
 import { format } from 'date-fns';
-import { Between, Raw } from 'typeorm';
 import * as dayjs from 'dayjs';
 
 @Injectable()
@@ -70,12 +69,10 @@ export class BookingsService {
       throw new NotFoundException(`Activity ${activityId} not found`);
     }
 
-    // Save activity duration as needed for filtering
+    // Validate activity duration
     if (!activity.duration_hours) {
       throw new BadRequestException('Activity duration not configured');
     }
-
-    const activityDuration = activity.duration_hours * 60; // Convert to minutes
 
     const inventories = await this.inventoryRepository.find({
       where: { customer: { id: customerId } },
@@ -396,8 +393,7 @@ export class BookingsService {
         reservation.status = 'CONFIRMED';
         reservation.max_capacity = availableQuantity;
 
-        const result =
-          await this.activityRentalReservationRepo.save(reservation);
+        await this.activityRentalReservationRepo.save(reservation);
       }
     }
 
@@ -447,8 +443,19 @@ export class BookingsService {
       return { activityId, date, slots: [] };
     }
 
-    const startTime = dayjs(`${date} ${schedule.start_time}`);
-    const endTime = dayjs(`${date} ${schedule.end_time}`);
+    // Handle 24-hour schedules (start/end times may be null)
+    let startTime: dayjs.Dayjs;
+    let endTime: dayjs.Dayjs;
+    if (schedule.is_24hours) {
+      startTime = dayjs(date).startOf('day');
+      endTime = dayjs(date).endOf('day');
+    } else {
+      if (!schedule.start_time || !schedule.end_time) {
+        return { activityId, date, slots: [] };
+      }
+      startTime = dayjs(`${date} ${schedule.start_time}`);
+      endTime = dayjs(`${date} ${schedule.end_time}`);
+    }
 
     // 3. Generate time slots
     const generatedSlots: string[] = [];

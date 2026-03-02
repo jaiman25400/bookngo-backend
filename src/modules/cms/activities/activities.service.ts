@@ -204,6 +204,8 @@ export class ActivitiesService {
         requires_waiver: createData.requires_waiver,
         booking_type: bookingType,
         activity_type: activityType,
+        redirect_to_external_website: createData.redirect_to_external_website ?? false,
+        external_booking_url: createData.external_booking_url ?? null,
       };
 
       // Create and save the new activity entity

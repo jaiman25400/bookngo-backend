@@ -95,6 +95,15 @@ export class UpdateActivityDto {
   safety_instructions?: string;
 
   @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  redirect_to_external_website?: boolean;
+
+  @IsOptional()
+  @IsString()
+  external_booking_url?: string | null;
+
+  @IsOptional()
   @IsArray()
   @Transform(({ value }) => {
     try {

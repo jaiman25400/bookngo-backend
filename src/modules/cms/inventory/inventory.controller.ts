@@ -66,16 +66,19 @@ export class InventoryController {
           cb(null, uniqueName);
         },
       }),
-    })
+    }),
   )
   async updateInventory(
     @Param('id') id: number,
     @Body() updateInventoryDto: UpdateInventoryDto,
     @UploadedFile() thumbnail?: Express.Multer.File,
   ) {
-    return this.inventoryService.updateInventory(id, updateInventoryDto, thumbnail);
+    return this.inventoryService.updateInventory(
+      id,
+      updateInventoryDto,
+      thumbnail,
+    );
   }
-  
 
   @Delete(':id')
   async deleteInventory(@Param('id') id: number, @Request() req) {

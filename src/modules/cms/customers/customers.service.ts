@@ -72,7 +72,7 @@ export class CustomersService {
     },
   ): Promise<CustomerDetail> {
     try {
-      console.log('Cust ID :',customerId)
+      console.log('Cust ID :', customerId);
       const customer = await this.customerRepository.findOne({
         where: { id: customerId },
         relations: ['detail'],

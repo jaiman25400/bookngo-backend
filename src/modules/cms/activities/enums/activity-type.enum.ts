@@ -1,6 +1,6 @@
 export enum BookingType {
-  SLOT = 'SLOT',      // Users need to book a specific time slot
-  ANYTIME = 'ANYTIME' // Users can book at any time
+  SLOT = 'SLOT', // Users need to book a specific time slot
+  ANYTIME = 'ANYTIME', // Users can book at any time
 }
 
 export enum AgeGroup {
@@ -15,6 +15,6 @@ export enum ActivityType {
   SKATING = 'skating',
   HIKING = 'hiking',
   SNOWBOARDING = 'snowboarding',
-  TUBING= 'tubing'
+  TUBING = 'tubing',
   // Add more as needed
 }

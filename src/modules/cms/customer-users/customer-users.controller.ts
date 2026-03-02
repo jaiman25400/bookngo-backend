@@ -33,18 +33,16 @@ export class CustomerUsersController {
         inviteUserDto.name,
         req.user?.customer,
         inviteUserDto.role,
+        inviteUserDto.password,
       );
 
       return {
-        message: 'Invitation sent successfully',
+        message: result.message,
         data: result,
       };
     } catch (error) {
-      // Preserve existing HTTP exceptions
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to send invitation');
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException('Failed to create user');
     }
   }
 
@@ -52,24 +50,21 @@ export class CustomerUsersController {
   @Post('inviteUserByAdmin')
   async inviteUserByAdmin(@Body() inviteUserDto: any) {
     try {
-      console.log('Body Invite User',inviteUserDto);
       const result = await this.customerUsersService.inviteUser(
         inviteUserDto.email,
         inviteUserDto.name,
         inviteUserDto.customer,
         inviteUserDto.role,
+        inviteUserDto.password,
       );
 
       return {
-        message: 'Invitation sent successfully',
+        message: result.message,
         data: result,
       };
     } catch (error) {
-      // Preserve existing HTTP exceptions
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to send invitation');
+      if (error instanceof HttpException) throw error;
+      throw new InternalServerErrorException('Failed to create user');
     }
   }
   /**

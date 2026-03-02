@@ -7,9 +7,9 @@ import { InventoryService } from './inventory.service';
 import { InventoryController } from './inventory.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Inventory, InventorySize, Customer])],  // ✅ Fix: Import TypeOrmModule with entities
+  imports: [TypeOrmModule.forFeature([Inventory, InventorySize, Customer])], // ✅ Fix: Import TypeOrmModule with entities
   controllers: [InventoryController],
   providers: [InventoryService],
-  exports: [TypeOrmModule]  // ✅ If another module needs these repositories
+  exports: [TypeOrmModule], // ✅ If another module needs these repositories
 })
 export class InventoryModule {}

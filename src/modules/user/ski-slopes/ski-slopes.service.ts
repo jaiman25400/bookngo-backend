@@ -11,10 +11,12 @@ export class SkiSlopesService {
   constructor(
     @InjectRepository(CustomerDetail)
     private readonly customerDetailRepository: Repository<CustomerDetail>,
-
   ) {}
 
-  async getByRegion(region: string): Promise<{
+  async getByRegion(
+    region: string,
+    activityType?: ActivityType,
+  ): Promise<{
     region: string;
     count: number;
     results: CustomerDetail[];
@@ -27,15 +29,27 @@ export class SkiSlopesService {
     }
 
     try {
-      const results = await this.customerDetailRepository.find({
-        where: { customer_state: region },
-      });
+      if (!activityType) {
+        const results = await this.customerDetailRepository.find({
+          where: { customer_state: region },
+        });
+        return { region, count: results.length, results };
+      }
 
-      return {
-        region,
-        count: results.length,
-        results,
-      };
+      const qb = this.customerDetailRepository
+        .createQueryBuilder('detail')
+        .innerJoin('detail.customer', 'customer')
+        .innerJoin(
+          'Activity',
+          'activity',
+          'activity.customerId = customer.id AND activity.activity_type = :activityType AND activity.is_active = :isActive',
+          { activityType, isActive: true },
+        )
+        .where('detail.customer_state = :region', { region })
+        .distinctOn(['customer.id']);
+
+      const results = await qb.getMany();
+      return { region, count: results.length, results };
     } catch (error) {
       this.logger.error(
         `Failed to fetch customers for region ${region}`,
@@ -59,8 +73,8 @@ export class SkiSlopesService {
       latitude: number;
       longitude: number;
       city: string;
-      customer_image:string,
-      slug: string
+      customer_image: string;
+      slug: string;
     }>
   > {
     try {
@@ -82,7 +96,7 @@ export class SkiSlopesService {
           'detail.customer_longitude AS longitude',
           'detail.customer_city AS city',
           'detail.home_image_url AS customer_image',
-          'detail.customer_slug AS customer_slug'
+          'detail.customer_slug AS customer_slug',
         ])
         .where('detail.customer_latitude IS NOT NULL')
         .andWhere('detail.customer_longitude IS NOT NULL')
@@ -95,7 +109,60 @@ export class SkiSlopesService {
         longitude: Number(item.longitude),
         city: item.city,
         customer_image: item.customer_image,
-        slug: item.customer_slug
+        slug: item.customer_slug,
+      }));
+    } catch (error) {
+      console.error('Database error:', error);
+      throw new HttpException(
+        'Failed to retrieve customer data',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getCustomersForIceSkating(): Promise<
+    Array<{
+      name: string;
+      latitude: number;
+      longitude: number;
+      city: string;
+      customer_image: string;
+      slug: string;
+    }>
+  > {
+    try {
+      const results = await this.customerDetailRepository
+        .createQueryBuilder('detail')
+        .innerJoin('detail.customer', 'customer')
+        .innerJoin(
+          'Activity',
+          'activity',
+          'activity.customerId = customer.id AND activity.activity_type = :activityType AND activity.is_active = :isActive',
+          {
+            activityType: ActivityType.SKATING,
+            isActive: true,
+          },
+        )
+        .select([
+          'detail.customer_display_name AS name',
+          'detail.customer_latitude AS latitude',
+          'detail.customer_longitude AS longitude',
+          'detail.customer_city AS city',
+          'detail.home_image_url AS customer_image',
+          'detail.customer_slug AS customer_slug',
+        ])
+        .where('detail.customer_latitude IS NOT NULL')
+        .andWhere('detail.customer_longitude IS NOT NULL')
+        .distinctOn(['customer.id'])
+        .getRawMany();
+
+      return results.map((item) => ({
+        name: item.name,
+        latitude: Number(item.latitude),
+        longitude: Number(item.longitude),
+        city: item.city,
+        customer_image: item.customer_image,
+        slug: item.customer_slug,
       }));
     } catch (error) {
       console.error('Database error:', error);

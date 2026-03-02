@@ -7,9 +7,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CustomerUser } from './customers-users.entity';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
-import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+
+/** Default password for new users when email invite is disabled (development). */
+const DEFAULT_DEV_PASSWORD = 'TempPass123!';
 
 @Injectable()
 export class CustomerUsersService {
@@ -17,17 +18,20 @@ export class CustomerUsersService {
     @InjectRepository(CustomerUser)
     private readonly customerUserRepository: Repository<CustomerUser>,
     private readonly configService: ConfigService,
-    private readonly dataSource: DataSource, // Needed for transactions
+    private readonly dataSource: DataSource,
   ) {}
 
-  // 1️⃣ Invite a user: Insert new or re-send invite if inactive
+  /**
+   * Invite a user: create or reactivate, set password, activate.
+   * Email sending is disabled in development; user can log in immediately with default or provided password.
+   */
   async inviteUser(
     email: string,
     name: string,
     customerId: number,
     role: string,
+    password?: string,
   ) {
-    // Check for existing user
     const existingUser = await this.customerUserRepository.findOne({
       where: { email },
     });
@@ -35,13 +39,16 @@ export class CustomerUsersService {
       throw new BadRequestException('User already exists and is active');
     }
 
-    // Generate a secure token
-    const token = crypto.randomBytes(32).toString('hex');
-    let user: CustomerUser;
+    const plainPassword = password && password.trim() ? password : DEFAULT_DEV_PASSWORD;
+    const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-    // Create or update user entity
+    let user: CustomerUser;
     if (existingUser) {
-      existingUser.password_token = token;
+      existingUser.password = hashedPassword;
+      existingUser.password_token = null;
+      existingUser.is_active = true;
+      existingUser.name = name;
+      existingUser.role = role;
       user = await this.customerUserRepository.save(existingUser);
     } else {
       user = this.customerUserRepository.create({
@@ -49,48 +56,33 @@ export class CustomerUsersService {
         name,
         customer: { id: customerId },
         role,
-        password_token: token,
-        is_active: false,
+        password: hashedPassword,
+        password_token: null,
+        is_active: true,
       });
       user = await this.customerUserRepository.save(user);
     }
 
-    // Send invitation email
-    await this.sendInviteEmail(email, token);
-    return { message: 'Invitation sent successfully' };
+    // Email sending disabled for development – user is active and can log in with the password above
+    // await this.sendInviteEmail(email, token);
+
+    return {
+      message: 'User created successfully. They can log in with the provided or default password.',
+      email: user.email,
+      defaultPassword: password ? undefined : DEFAULT_DEV_PASSWORD,
+    };
   }
 
-  // 2️⃣ Send email securely using environment variables
-  async sendInviteEmail(email: string, token: string) {
-    try {
-      const transporter = nodemailer.createTransport({
-        host: this.configService.get<string>('SMTP_HOST'),
-        port: this.configService.get<number>('SMTP_PORT'),
-        secure: false,
-        auth: {
-          user: this.configService.get<string>('SMTP_USER'),
-          pass: this.configService.get<string>('SMTP_PASS'),
-        },
-      });
-
-      const resetLink = `${this.configService.get<string>('FRONTEND_URL')}/setup-password?token=${token}`;
-
-      const mailOptions = {
-        from: this.configService.get<string>('EMAIL_FROM'),
-        to: email,
-        subject: 'Set Up Your Account',
-        html: `<p>Hello,</p>
-              <p>You have been invited to join. Click the link below to set your password:</p>
-              <a href="${resetLink}" target="_blank">Set Your Password</a>
-              <p>If you did not request this, you can safely ignore this email.</p>`,
-      };
-
-      await transporter.sendMail(mailOptions);
-    } catch (error) {
-      console.error('Error sending invite email:', error);
-      throw new InternalServerErrorException('Failed to send invitation email');
-    }
-  }
+  // Email invite disabled in development. Uncomment and use when SMTP is ready.
+  // async sendInviteEmail(email: string, token: string) {
+  //   try {
+  //     const transporter = nodemailer.createTransport({ ... });
+  //     await transporter.sendMail(mailOptions);
+  //   } catch (error) {
+  //     console.error('Error sending invite email:', error);
+  //     throw new InternalServerErrorException('Failed to send invitation email');
+  //   }
+  // }
 
   // 3️⃣ Verify token & set password
   async setPassword(token: string, newPassword: string) {

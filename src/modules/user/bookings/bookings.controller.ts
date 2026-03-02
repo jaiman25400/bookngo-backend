@@ -7,12 +7,9 @@ import {
   Post,
   Body,
   BadRequestException,
-  Param,
-  Put,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { Public } from '@/modules/cms/auth/public.decorator';
-import { checkSlotAvailabilityByDate } from './dto/check-availability.dto';
 
 @Controller('user/bookings')
 export class BookingsController {
@@ -20,14 +17,19 @@ export class BookingsController {
 
   @Public()
   @Get('rentals/customerSlug')
-  async getInventoryByCustomerSlug(@Query('slug') customerSlug: string, @Query('bookingDate') 
-  bookingDate: string, @Query('bookingTime') bookingTime: string, @Query('activityId') activityId: string) {
+  async getInventoryByCustomerSlug(
+    @Query('slug') customerSlug: string,
+    @Query('bookingDate')
+    bookingDate: string,
+    @Query('bookingTime') bookingTime: string,
+    @Query('activityId') activityId: string,
+  ) {
     try {
       return await this.bookingsService.getInventoryUsingCustomerSlug(
         customerSlug,
         bookingDate,
         bookingTime,
-        activityId
+        activityId,
       );
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -99,17 +101,23 @@ export class BookingsController {
   @Get('check-availability')
   async returnSlotAvailabilityByDate(@Query() query: any) {
     try {
-      console.log(`Checking availability for date: ${query.date}, activityId: ${query.activityId}`);
-      const availability = await this.bookingsService.returnSlotAvailabilityByDate(
-        query.date,
-        query.activityId,
+      console.log(
+        `Checking availability for date: ${query.date}, activityId: ${query.activityId}`,
       );
+      const availability =
+        await this.bookingsService.returnSlotAvailabilityByDate(
+          query.date,
+          query.activityId,
+        );
       return {
         success: true,
         data: availability,
       };
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException('Failed to check slot availability');

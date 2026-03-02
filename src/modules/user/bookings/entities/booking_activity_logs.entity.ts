@@ -37,5 +37,4 @@ export class BookingActivityLogs {
 
   @UpdateDateColumn()
   updated_at: Date;
-
 }

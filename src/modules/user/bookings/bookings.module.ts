@@ -22,10 +22,11 @@ import { InventorySize } from '@/modules/cms/inventory/entities/inventory-size.e
       BookingRentalLogs,
       BookingActivityLogs,
       ActivityRentalReservation,
-      InventorySize
+      InventorySize,
     ]),
   ],
   controllers: [BookingsController],
   providers: [BookingsService],
+  exports: [BookingsService],
 })
 export class BookingsModule {}

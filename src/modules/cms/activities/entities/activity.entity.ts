@@ -68,10 +68,10 @@ export class Activity {
   activity_type: ActivityType;
 
   @Column({ type: 'int', default: 60 }) // Default: 60 minutes
-  slot_interval_minutes: number;  // Add this column
+  slot_interval_minutes: number; // Add this column
 
   @Column({ type: 'int', default: 10 }) // Default: 10 users
-  max_per_slot: number;  // Add this column
+  max_per_slot: number; // Add this column
 
   @Column({ type: 'int' })
   duration_hours: number;
@@ -115,6 +115,14 @@ export class Activity {
     default: BookingType.ANYTIME,
   })
   booking_type: BookingType;
+
+  /** When true, "Book now" redirects user to external_booking_url instead of in-app booking. */
+  @Column({ type: 'boolean', default: false })
+  redirect_to_external_website: boolean;
+
+  /** URL to redirect users to for booking when redirect_to_external_website is true. */
+  @Column({ type: 'text', nullable: true })
+  external_booking_url: string | null;
 
   @CreateDateColumn()
   created_at: Date;

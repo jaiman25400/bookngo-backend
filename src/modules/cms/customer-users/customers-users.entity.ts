@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Customer } from '../customers/entities/customers.entity';
 
-@Entity({ name : 'customer_users', schema : 'BookNGo_CMS'})
+@Entity({ name: 'customer_users', schema: 'BookNGo_CMS' })
 @Unique(['customer', 'email']) // Composite unique constraint
 export class CustomerUser {
   @PrimaryGeneratedColumn()

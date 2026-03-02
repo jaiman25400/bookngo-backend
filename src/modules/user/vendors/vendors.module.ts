@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Activity } from '@/modules/cms/activities/entities/activity.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([CustomerDetail,Activity])],
+  imports: [TypeOrmModule.forFeature([CustomerDetail, Activity])],
   controllers: [VendorsController],
   providers: [VendorsService],
 })

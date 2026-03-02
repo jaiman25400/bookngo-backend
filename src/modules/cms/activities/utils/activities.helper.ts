@@ -52,6 +52,8 @@ export async function updateScalarFields(
     'activity_type',
     'activity_image_gallery',
     'activity_thumbnail_image',
+    'redirect_to_external_website',
+    'external_booking_url',
   ];
 
   scalarFields.forEach((field) => {

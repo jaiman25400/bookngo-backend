@@ -30,7 +30,7 @@ export class AuthController {
     @Res() res: Response,
   ) {
     try {
-      console.log("Login DTO ",loginDto)
+      console.log('Login DTO ', loginDto);
       const { email, password } = loginDto;
 
       if (!email || !password) {
@@ -69,7 +69,6 @@ export class AuthController {
   async getMe(@Req() req: Request) {
     return req.user; // Already attached by JwtAuthGuard
   }
-  
 
   @Post('logout')
   async logout(@Res() res: Response) {

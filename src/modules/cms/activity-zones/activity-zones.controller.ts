@@ -136,7 +136,6 @@ export class ActivityZonesController {
       zone_image_gallery?: Express.Multer.File[];
     },
   ) {
-
     const filePaths: {
       zone_thumbnail_image?: string;
       zone_image_gallery?: string[];

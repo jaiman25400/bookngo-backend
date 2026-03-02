@@ -7,7 +7,10 @@ import { existsSync, unlinkSync } from 'fs';
 export async function deleteFileIfExists(filePath?: string | null) {
   if (!filePath) return;
 
-  const fullPath = join(process.cwd(), filePath.startsWith('/') ? filePath.slice(1) : filePath);
+  const fullPath = join(
+    process.cwd(),
+    filePath.startsWith('/') ? filePath.slice(1) : filePath,
+  );
 
   if (existsSync(fullPath)) {
     try {

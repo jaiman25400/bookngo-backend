@@ -49,13 +49,13 @@ export class CreateActivityDto {
   @Min(1)
   @Max(24 * 60) // Max 24 hours in minutes
   @Type(() => Number)
-  slot_interval_minutes?: number; 
+  slot_interval_minutes?: number;
 
   @IsOptional()
   @IsNumber()
   @Min(1)
   @Type(() => Number)
-  max_per_slot?: number; 
+  max_per_slot?: number;
 
   @Transform(({ value }) => {
     if (typeof value === 'string') {
@@ -87,10 +87,19 @@ export class CreateActivityDto {
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
-  provides_rentals?: boolean; 
+  provides_rentals?: boolean;
 
   @IsOptional()
   safety_instructions?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  redirect_to_external_website?: boolean;
+
+  @IsOptional()
+  @IsString()
+  external_booking_url?: string | null;
 
   @IsOptional()
   @IsArray()

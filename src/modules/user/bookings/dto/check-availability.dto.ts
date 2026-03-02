@@ -8,4 +8,4 @@ export class checkSlotAvailabilityByDate {
   @IsNumber()
   @IsNotEmpty()
   activityId: number;
-} 
+}

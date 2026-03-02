@@ -42,7 +42,7 @@ export class Booking_logs {
 
   @Column()
   zoneName: string;
- 
+
   // Booking Details
   @Column({ type: 'date' })
   bookingDate: string;
@@ -63,10 +63,22 @@ export class Booking_logs {
   // Status
   @Column({
     type: 'enum',
-    enum: ['STAGED', 'CONFIRMED', 'CANCELLED', 'COMPLETED'],
+    enum: ['STAGED', 'CONFIRMED', 'CHECKED_IN', 'CANCELLED', 'COMPLETED'],
     default: 'STAGED',
   })
-  status: 'STAGED' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+  status: 'STAGED' | 'CONFIRMED' | 'CHECKED_IN' | 'CANCELLED' | 'COMPLETED';
+
+  @Column({ default: false })
+  waiverSigned: boolean;
+
+  @Column({ type: 'timestamp', nullable: true })
+  waiverSignedAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  checkedInAt: Date | null;
+
+  @Column({ type: 'int', nullable: true })
+  checkedInBy: number | null;
 
   @Column({ default: false })
   paymentStatus: boolean;
@@ -77,4 +89,3 @@ export class Booking_logs {
   @UpdateDateColumn()
   updatedAt: Date;
 }
- 

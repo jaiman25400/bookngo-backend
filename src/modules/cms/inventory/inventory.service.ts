@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Inventory } from './entities/inventory.entity';
@@ -33,53 +29,47 @@ export class InventoryService {
     createInventoryDto: CreateInventoryDto,
     thumbnail: Express.Multer.File | undefined,
   ) {
-    try {
-      const {
-        equipment_name,
-        totalQuantity,
-        availableQuantity,
-        rental_price_per_hour,
-        description,
-        sizes,
-      } = createInventoryDto;
+    const {
+      equipment_name,
+      totalQuantity,
+      availableQuantity,
+      rental_price_per_hour,
+      description,
+      sizes,
+    } = createInventoryDto;
 
-      // Generate thumbnail URL if file exists
-      const thumbnailImageUrl = thumbnail
-        ? `/uploads/CMS/inventory/${thumbnail.filename}`
-        : null;
+    // Generate thumbnail URL if file exists
+    const thumbnailImageUrl = thumbnail
+      ? `/uploads/CMS/inventory/${thumbnail.filename}`
+      : null;
 
-      // Create inventory entry including new optional fields
-      const newInventory = this.inventoryRepository.create({
-        customer: customer, // Must be a full Customer entity
-        equipment_name,
-        totalQuantity,
-        availableQuantity,
-        rental_price_per_hour: Number(rental_price_per_hour), // Ensure correct type
-        description,
-        thumbnailImageUrl: thumbnailImageUrl || null, // Explicit null
-      });
+    // Create inventory entry including new optional fields
+    const newInventory = this.inventoryRepository.create({
+      customer: customer, // Must be a full Customer entity
+      equipment_name,
+      totalQuantity,
+      availableQuantity,
+      rental_price_per_hour: Number(rental_price_per_hour), // Ensure correct type
+      description,
+      thumbnailImageUrl: thumbnailImageUrl || null, // Explicit null
+    });
 
-      const savedInventory = await this.inventoryRepository.save(newInventory);
+    const savedInventory = await this.inventoryRepository.save(newInventory);
 
-      // Add sizes if provided, including the optional description field for each size
-      // Handle sizes parsing and saving
-      if (sizes) {
-        const parsedSizes = sizes;
-        if (parsedSizes.length > 0) {
-          const inventorySizes = parsedSizes.map((size) => ({
-            inventory: savedInventory,
-            ...size,
-          }));
-          await this.inventorySizeRepository.save(inventorySizes);
-        }
+    // Add sizes if provided, including the optional description field for each size
+    // Handle sizes parsing and saving
+    if (sizes) {
+      const parsedSizes = sizes;
+      if (parsedSizes.length > 0) {
+        const inventorySizes = parsedSizes.map((size) => ({
+          inventory: savedInventory,
+          ...size,
+        }));
+        await this.inventorySizeRepository.save(inventorySizes);
       }
-
-      return savedInventory;
-    } catch (error) {
-      // Optionally log the error details using your preferred logging library or service.
-      // Example: this.logger.error('Error creating inventory', error.stack);
-      throw error; // Re-throw the error to be handled by higher-level middleware or error handlers.
     }
+
+    return savedInventory;
   }
 
   async getAllInventories(customer_id: number) {
@@ -159,7 +149,12 @@ export class InventoryService {
     } catch (error) {
       // Clean up uploaded file if error occurs
       if (thumbnail) {
-        const newFilePath = join(process.cwd(), 'uploads', 'CMS', thumbnail.filename);
+        const newFilePath = join(
+          process.cwd(),
+          'uploads',
+          'CMS',
+          thumbnail.filename,
+        );
         if (existsSync(newFilePath)) {
           unlinkSync(newFilePath);
         }
@@ -169,28 +164,24 @@ export class InventoryService {
   }
 
   async deleteInventory(id: number, customer_id: number) {
-    try {
-      const inventory = await this.inventoryRepository.findOne({
-        where: { id, customer: { id: customer_id } },
-        relations: ['customer'],
-      });
+    const inventory = await this.inventoryRepository.findOne({
+      where: { id, customer: { id: customer_id } },
+      relations: ['customer'],
+    });
 
-      if (!inventory) {
-        throw new NotFoundException(
-          `Inventory not found or does not belong to the customer.`,
-        );
-      }
-
-      // Delete associated thumbnail file
-      if (inventory.thumbnailImageUrl) {
-        await deleteFileIfExists(inventory.thumbnailImageUrl);
-      }
-
-      // Delete database record
-      return await this.inventoryRepository.remove(inventory);
-    } catch (error) {
-      throw error;
+    if (!inventory) {
+      throw new NotFoundException(
+        `Inventory not found or does not belong to the customer.`,
+      );
     }
+
+    // Delete associated thumbnail file
+    if (inventory.thumbnailImageUrl) {
+      await deleteFileIfExists(inventory.thumbnailImageUrl);
+    }
+
+    // Delete database record
+    return await this.inventoryRepository.remove(inventory);
   }
 
   async addInventorySize(

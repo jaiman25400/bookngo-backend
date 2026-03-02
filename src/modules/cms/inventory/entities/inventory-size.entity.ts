@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 import { Inventory } from './inventory.entity';
 
-@Entity({name : 'inventory_sizes', schema : 'BookNGo_CMS'})
+@Entity({ name: 'inventory_sizes', schema: 'BookNGo_CMS' })
 @Unique(['inventory', 'size']) // Add unique constraint
 export class InventorySize {
   @PrimaryGeneratedColumn()

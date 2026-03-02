@@ -28,7 +28,7 @@ export class CreateActivityZoneDto {
   @IsOptional()
   @IsString()
   zone_tagline?: string;
-  
+
   @IsNotEmpty()
   @IsEnum(ZoneStatus)
   status?: ZoneStatus = ZoneStatus.ACTIVE;

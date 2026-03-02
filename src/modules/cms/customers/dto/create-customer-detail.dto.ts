@@ -26,7 +26,7 @@ export class CreateCustomerDetailDto {
   @IsOptional()
   @IsString()
   customer_latitude?: string;
-  
+
   @IsOptional()
   @IsString()
   customer_address?: string;

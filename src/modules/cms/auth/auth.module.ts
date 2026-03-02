@@ -10,7 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ CustomerUser]),
+    TypeOrmModule.forFeature([CustomerUser]),
     JwtModule.registerAsync({
       imports: [ConfigModule], // Ensure ConfigModule is imported
       useFactory: async (configService: ConfigService) => ({
@@ -22,11 +22,7 @@ import { JwtModule } from '@nestjs/jwt';
     ConfigModule, // Ensure ConfigModule is imported to access .env variables
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    CustomerUsersService,
-    JwtAuthGuard,
-  ],
+  providers: [AuthService, CustomerUsersService, JwtAuthGuard],
   exports: [AuthService, JwtAuthGuard, JwtModule],
 })
 export class AuthModule {}
