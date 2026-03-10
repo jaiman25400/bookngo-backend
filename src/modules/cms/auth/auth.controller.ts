@@ -43,11 +43,16 @@ export class AuthController {
 
       const { access_token } = await this.authService.login(user);
 
+      const isProd = process.env.NODE_ENV === 'production';
+
       res.cookie('token', access_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: isProd,
+        // In production we are on a different domain than the frontend,
+        // so we must allow the cookie to be sent cross-site.
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 3600000,
+        path: '/',
       });
 
       return res.json({ message: 'Login successful' });
@@ -76,7 +81,7 @@ export class AuthController {
       res.cookie('token', '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         expires: new Date(0),
         path: '/',
       });
