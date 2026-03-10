@@ -270,3 +270,61 @@ Set `customer_state` on that resort’s row in `customer_details` to the exact r
 | Has at least one skiing/snowboarding activity | `BookNGo_CMS.activities` | `activity_type` IN ('skiing','snowboarding'), `is_active` = true, `customerId` = customer id |
 | Has coordinates | `BookNGo_CMS.customer_details` | `customer_latitude`, `customer_longitude` NOT NULL |
 | In region list (e.g. Ontario) | `BookNGo_CMS.customer_details` | `customer_state` = e.g. `'Ontario'` |
+
+---
+
+## CMS login not working in production (“Unable to connect to the server”)
+
+If the onboarding API works (e.g. from Postman) but **CMS login fails** in the deployed frontend with “Unable to connect to the server”, the browser is not able to reach the backend or is blocked by CORS.
+
+### 1. Backend (Render) – CORS
+
+The backend only allows requests from origins set in env vars. Add your **CMS frontend URL**:
+
+1. **Render** → your backend service → **Environment**.
+2. Set **`CMS_FRONTEND_URL`** to the **exact** URL of the CMS app in the browser (no trailing slash), e.g.:
+   - `https://bookngo-fe-gdaofke1s-jaiman25400s-projects.vercel.app`
+   - or your production CMS URL like `https://bookngo-cms.vercel.app`
+3. If you have a separate user frontend, set **`FRONTEND_URL`** to that URL.
+4. Save and **redeploy** the backend.
+
+### 2. Frontend (Vercel) – API base URL
+
+The CMS frontend must call your **deployed** backend, not localhost:
+
+1. **Vercel** → your CMS frontend project → **Settings** → **Environment Variables**.
+2. Set the variable that holds the **API / backend base URL** (e.g. `NEXT_PUBLIC_API_URL`, `VITE_API_URL`, or `REACT_APP_API_URL`) to:
+   - `https://bookngo-backend-pqx1.onrender.com`
+3. Redeploy the frontend if needed.
+
+### 3. Cold start (Render free tier)
+
+On the free tier the backend can spin down. The **first** request after idle may take 30–60 seconds and can timeout. Try logging in again after a short wait, or hit the backend health endpoint first to wake it: `GET https://bookngo-backend-pqx1.onrender.com/health/cms`.
+
+---
+
+## Connect pgAdmin to Render PostgreSQL (from your machine)
+
+Use the **External** connection details; the Internal URL only works from inside Render.
+
+### 1. In pgAdmin
+
+1. Right‑click **Servers** → **Register** → **Server**.
+2. **General** tab: Name = e.g. `BookNGo Render`.
+3. **Connection** tab:
+
+| Field    | Value |
+|----------|--------|
+| Host     | `dpg-d6j1fbhdrdic73ajf5t0-a.oregon-postgres.render.com` |
+| Port     | `5432` |
+| Maintenance database | `bookngo_db` |
+| Username | `bookngo_db_user` |
+| Password | `AFB8WNkwhS3lTyvgJZnBRG2grzGgE1ao` (tick “Save password” if you want) |
+
+4. **Save** (optional): enable “Save password”.
+5. Click **Save**.
+
+### 2. After connecting
+
+- Your data is under **Databases** → **bookngo_db** → **Schemas** → **BookNGo_CMS** (and **BookNGo_Users**).
+- If connection fails: check firewall/VPN; Render’s external DB is reachable from the internet on port 5432.
