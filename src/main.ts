@@ -13,15 +13,18 @@ import { Client, type ClientConfig } from 'pg';
 const CMS_SCHEMA = 'BookNGo_CMS';
 const USERS_SCHEMA = 'BookNGo_Users';
 
-/** Create PostgreSQL schemas if they don't exist (e.g. on fresh Render DB). */
+/** Create PostgreSQL schemas if they don't exist (e.g. on fresh Neon/Render DB). */
 async function ensureSchemas(): Promise<void> {
-  const config: ClientConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 5432,
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASS ?? '',
-    database: process.env.DB_NAME || 'bookngo_db',
-  };
+  const connectionUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  const config: ClientConfig = connectionUrl
+    ? { connectionString: connectionUrl, ssl: { rejectUnauthorized: false } }
+    : {
+        host: process.env.DB_HOST || 'localhost',
+        port: Number(process.env.DB_PORT) || 5432,
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASS ?? '',
+        database: process.env.DB_NAME || 'bookngo_db',
+      };
   /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access -- pg Client types are correct at runtime */
   const client = new Client(config);
   try {
