@@ -1,8 +1,8 @@
 import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CustomerDetail } from '@/modules/cms/customers/entities/customers-detail.entity';
-import { ActivityType } from '@/modules/cms/activities/enums/activity-type.enum';
+import { CustomerDetail } from '../../cms/customers/entities/customers-detail.entity';
+import { ActivityType } from '../../cms/activities/enums/activity-type.enum';
 
 @Injectable()
 export class SkiSlopesService {

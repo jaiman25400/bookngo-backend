@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { SkiSlopesService } from './ski-slopes.service';
-import { Public } from '@/modules/cms/auth/public.decorator';
-import { ActivityType } from '@/modules/cms/activities/enums/activity-type.enum';
+import { Public } from '../../cms/auth/public.decorator';
+import { ActivityType } from '../../cms/activities/enums/activity-type.enum';
 
 @Controller('user/ski-slopes')
 export class SkiSlopesController {

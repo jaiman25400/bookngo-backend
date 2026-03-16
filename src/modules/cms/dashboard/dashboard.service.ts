@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Booking_logs } from '@/modules/user/bookings/entities/booking_logs.entity';
+import { Booking_logs } from '../../user/bookings/entities/booking_logs.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { format, addHours } from 'date-fns';
 import { DashboardBookingResponseDto } from './dto/dashboard-booking-response.dto';

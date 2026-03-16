@@ -6,20 +6,20 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { Customer } from '@/modules/cms/customers/entities/customers.entity';
-import { CustomerDetail } from '@/modules/cms/customers/entities/customers-detail.entity';
-import { CustomerUser } from '@/modules/cms/customer-users/customers-users.entity';
-import { ActivityZone } from '@/modules/cms/activity-zones/entities/activity-zone.entity';
-import { ZoneStatus } from '@/modules/cms/activity-zones/entities/activity-zone.entity';
-import { Activity } from '@/modules/cms/activities/entities/activity.entity';
-import { ActivitySchedule } from '@/modules/cms/activities/entities/activity-schedule.entity';
-import { ActivityHoliday } from '@/modules/cms/activities/entities/activity-holiday.entity';
-import { Inventory } from '@/modules/cms/inventory/entities/inventory.entity';
-import { InventorySize } from '@/modules/cms/inventory/entities/inventory-size.entity';
+import { Customer } from '../../cms/customers/entities/customers.entity';
+import { CustomerDetail } from '../../cms/customers/entities/customers-detail.entity';
+import { CustomerUser } from '../../cms/customer-users/customers-users.entity';
+import { ActivityZone } from '../../cms/activity-zones/entities/activity-zone.entity';
+import { ZoneStatus } from '../../cms/activity-zones/entities/activity-zone.entity';
+import { Activity } from '../../cms/activities/entities/activity.entity';
+import { ActivitySchedule } from '../../cms/activities/entities/activity-schedule.entity';
+import { ActivityHoliday } from '../../cms/activities/entities/activity-holiday.entity';
+import { Inventory } from '../../cms/inventory/entities/inventory.entity';
+import { InventorySize } from '../../cms/inventory/entities/inventory-size.entity';
 import {
   ActivityType,
   BookingType,
-} from '@/modules/cms/activities/enums/activity-type.enum';
+} from '../../cms/activities/enums/activity-type.enum';
 import { OnboardIceSkatingClientDto } from './dto/onboard-ice-skating-client.dto';
 
 const ADMIN_PASSWORD = 'BookNGO@123';

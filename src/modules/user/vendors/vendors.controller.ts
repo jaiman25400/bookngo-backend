@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { VendorsService } from './vendors.service';
-import { Public } from '@/modules/cms/auth/public.decorator';
+import { Public } from '../../cms/auth/public.decorator';
 
 @Controller('user/vendors')
 export class VendorsController {

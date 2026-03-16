@@ -1,5 +1,5 @@
-import { Activity } from '@/modules/cms/activities/entities/activity.entity';
-import { CustomerDetail } from '@/modules/cms/customers/entities/customers-detail.entity';
+import { Activity } from '../../cms/activities/entities/activity.entity';
+import { CustomerDetail } from '../../cms/customers/entities/customers-detail.entity';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';

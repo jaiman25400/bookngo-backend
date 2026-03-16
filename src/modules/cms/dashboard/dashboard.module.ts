@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
-import { Booking_logs } from '@/modules/user/bookings/entities/booking_logs.entity';
+import { Booking_logs } from '../../user/bookings/entities/booking_logs.entity';
 import { Activity } from '../activities/entities/activity.entity';
 
 @Module({

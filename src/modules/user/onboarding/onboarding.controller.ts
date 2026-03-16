@@ -1,7 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
 import { OnboardIceSkatingClientDto } from './dto/onboard-ice-skating-client.dto';
-import { Public } from '@/modules/cms/auth/public.decorator';
+import { Public } from '../../cms/auth/public.decorator';
 
 @Controller('user/onboarding')
 export class OnboardingController {

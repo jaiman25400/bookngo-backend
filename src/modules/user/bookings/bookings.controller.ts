@@ -9,7 +9,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
-import { Public } from '@/modules/cms/auth/public.decorator';
+import { Public } from '../../cms/auth/public.decorator';
 
 @Controller('user/bookings')
 export class BookingsController {
