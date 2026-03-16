@@ -26,7 +26,7 @@ import {
 import {
   deleteFileIfExists,
   deleteMultipleFilesIfExist,
-} from 'src/utils/common.helper';
+} from '../../../utils/common.helper';
 
 @Injectable()
 export class ActivitiesService {

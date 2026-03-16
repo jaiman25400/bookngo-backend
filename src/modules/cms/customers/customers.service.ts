@@ -11,7 +11,7 @@ import { CreateCustomerDetailDto } from './dto/create-customer-detail.dto';
 import {
   deleteFileIfExists,
   deleteMultipleFilesIfExist,
-} from 'src/utils/common.helper';
+} from '../../../utils/common.helper';
 
 @Injectable()
 export class CustomersService {
