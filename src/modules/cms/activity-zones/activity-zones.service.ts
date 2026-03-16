@@ -12,7 +12,7 @@ import { ActivityZone } from './entities/activity-zone.entity';
 import {
   deleteFileIfExists,
   deleteMultipleFilesIfExist,
-} from 'src/utils/common.helper';
+} from '../../../utils/common.helper';
 
 @Injectable()
 export class ActivityZonesService {

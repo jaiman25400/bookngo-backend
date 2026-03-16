@@ -9,7 +9,7 @@ import { CreateInventorySizeDto } from './dto/create-inventory-size.dto';
 import { Customer } from '../customers/entities/customers.entity';
 import { join } from 'path';
 import { existsSync, unlinkSync } from 'fs';
-import { deleteFileIfExists } from 'src/utils/common.helper';
+import { deleteFileIfExists } from '../../../utils/common.helper';
 
 @Injectable()
 export class InventoryService {
