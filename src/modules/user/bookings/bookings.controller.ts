@@ -107,13 +107,17 @@ export class BookingsController {
       const availability =
         await this.bookingsService.returnSlotAvailabilityByDate(
           query.date,
-          query.activityId,
+          Number(query.activityId),
         );
       return {
         success: true,
         data: availability,
       };
     } catch (error) {
+      // Log the real error so we can see why 400s happen
+      // eslint-disable-next-line no-console
+      console.error('check-availability error:', error);
+
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
