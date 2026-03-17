@@ -12,7 +12,7 @@ import { BookingActivityLogs } from './entities/booking_activity_logs.entity';
 import { ActivityRentalReservation } from './entities/booking_activity_rentals_logs.entity';
 import { InventorySize } from '../../cms/inventory/entities/inventory-size.entity';
 import { format } from 'date-fns';
-import dayjs from 'dayjs';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class BookingsService {
