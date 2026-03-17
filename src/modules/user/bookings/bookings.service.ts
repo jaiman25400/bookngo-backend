@@ -426,7 +426,20 @@ export class BookingsService {
       relations: ['schedules'],
     });
 
-    if (!activity) throw new Error('Activity not found');
+    // If activity doesn't exist, treat as \"no slots\" instead of 400
+    if (!activity) {
+      return { activityId, date, slots: [] };
+    }
+
+    // If schedules or key capacity fields are missing, also treat as \"no slots\"
+    if (
+      !activity.schedules ||
+      activity.schedules.length === 0 ||
+      !activity.slot_interval_minutes ||
+      !activity.max_per_slot
+    ) {
+      return { activityId, date, slots: [] };
+    }
 
     const slotInterval = activity.slot_interval_minutes;
     const maxPerSlot = activity.max_per_slot;
