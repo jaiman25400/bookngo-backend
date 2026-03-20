@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerDetail } from '../../cms/customers/entities/customers-detail.entity';
 import { ActivityType } from '../../cms/activities/enums/activity-type.enum';
+import { UploadsService } from '../../storage/uploads.service';
 
 @Injectable()
 export class SkiSlopesService {
@@ -11,6 +12,7 @@ export class SkiSlopesService {
   constructor(
     @InjectRepository(CustomerDetail)
     private readonly customerDetailRepository: Repository<CustomerDetail>,
+    private readonly uploads: UploadsService,
   ) {}
 
   async getByRegion(
@@ -103,14 +105,17 @@ export class SkiSlopesService {
         .distinctOn(['customer.id'])
         .getRawMany();
 
-      return results.map((item) => ({
-        name: item.name,
-        latitude: Number(item.latitude),
-        longitude: Number(item.longitude),
-        city: item.city,
-        customer_image: item.customer_image,
-        slug: item.customer_slug,
-      }));
+      return Promise.all(
+        results.map(async (item) => ({
+          name: item.name,
+          latitude: Number(item.latitude),
+          longitude: Number(item.longitude),
+          city: item.city,
+          customer_image:
+            (await this.uploads.resolveDisplayUrl(item.customer_image)) ?? '',
+          slug: item.customer_slug,
+        })),
+      );
     } catch (error) {
       console.error('Database error:', error);
       throw new HttpException(
@@ -156,14 +161,17 @@ export class SkiSlopesService {
         .distinctOn(['customer.id'])
         .getRawMany();
 
-      return results.map((item) => ({
-        name: item.name,
-        latitude: Number(item.latitude),
-        longitude: Number(item.longitude),
-        city: item.city,
-        customer_image: item.customer_image,
-        slug: item.customer_slug,
-      }));
+      return Promise.all(
+        results.map(async (item) => ({
+          name: item.name,
+          latitude: Number(item.latitude),
+          longitude: Number(item.longitude),
+          city: item.city,
+          customer_image:
+            (await this.uploads.resolveDisplayUrl(item.customer_image)) ?? '',
+          slug: item.customer_slug,
+        })),
+      );
     } catch (error) {
       console.error('Database error:', error);
       throw new HttpException(

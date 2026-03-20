@@ -17,6 +17,7 @@ import { BookingsModule } from './modules/user/bookings/bookings.module';
 import { DashboardModule } from './modules/cms/dashboard/dashboard.module';
 import { CmsBookingsModule } from './modules/cms/bookings/bookings.module';
 import { HealthModule } from './health/health.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { HealthModule } from './health/health.module';
     DashboardModule,
     CmsBookingsModule,
     HealthModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -9,10 +9,7 @@ import { CreateActivityZoneDto } from './dto/create-activity-zone.dto';
 import { UpdateActivityZoneDto } from './dto/update-activity-zone.dto';
 import { Customer } from '../customers/entities/customers.entity';
 import { ActivityZone } from './entities/activity-zone.entity';
-import {
-  deleteFileIfExists,
-  deleteMultipleFilesIfExist,
-} from '../../../utils/common.helper';
+import { UploadsService } from '../../storage/uploads.service';
 
 @Injectable()
 export class ActivityZonesService {
@@ -21,6 +18,7 @@ export class ActivityZonesService {
     private readonly activityZoneRepository: Repository<ActivityZone>,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    private readonly uploads: UploadsService,
   ) {}
 
   async create(
@@ -45,7 +43,16 @@ export class ActivityZonesService {
         customer: customer,
       });
 
-      return await this.activityZoneRepository.save(zone);
+      const saved = await this.activityZoneRepository.save(zone);
+      return {
+        ...saved,
+        zone_thumbnail_image:
+          (await this.uploads.resolveDisplayUrl(saved.zone_thumbnail_image)) ??
+          '',
+        zone_image_gallery: (
+          await this.uploads.resolveDisplayUrlList(saved.zone_image_gallery)
+        ).filter((u): u is string => u != null),
+      };
     } catch (error) {
       console.error('Database Error:', error);
       throw new InternalServerErrorException(
@@ -56,12 +63,20 @@ export class ActivityZonesService {
 
   async findAll(customer_id: number) {
     try {
-      // Find activity zones for the customer_id
       const activityZones = await this.activityZoneRepository.find({
-        where: { customer: { id: customer_id } }, // Use the correct foreign key relation
+        where: { customer: { id: customer_id } },
       });
 
-      return activityZones; // Return empty list if no records are found
+      return Promise.all(
+        activityZones.map(async (z) => ({
+          ...z,
+          zone_thumbnail_image:
+            (await this.uploads.resolveDisplayUrl(z.zone_thumbnail_image)) ?? '',
+          zone_image_gallery: (
+            await this.uploads.resolveDisplayUrlList(z.zone_image_gallery)
+          ).filter((u): u is string => u != null),
+        })),
+      );
     } catch {
       throw new InternalServerErrorException(
         'Failed to fetch Activity Zones from the database',
@@ -93,14 +108,14 @@ export class ActivityZonesService {
 
       // Handle thumbnail update
       if (updateActivityZoneDto.zone_thumbnail_image !== undefined) {
-        await deleteFileIfExists(activityZone.zone_thumbnail_image);
+        await this.uploads.deleteStored(activityZone.zone_thumbnail_image);
         activityZone.zone_thumbnail_image =
           updateActivityZoneDto.zone_thumbnail_image;
       }
 
       // Handle gallery update
       if (updateActivityZoneDto.zone_image_gallery !== undefined) {
-        await deleteMultipleFilesIfExist(activityZone.zone_image_gallery);
+        await this.uploads.deleteManyStored(activityZone.zone_image_gallery);
         activityZone.zone_image_gallery =
           updateActivityZoneDto.zone_image_gallery;
       }
@@ -108,8 +123,16 @@ export class ActivityZonesService {
       // Update other fields
       Object.assign(activityZone, updateActivityZoneDto);
 
-      // Save and return updated entity
-      return await this.activityZoneRepository.save(activityZone);
+      const saved = await this.activityZoneRepository.save(activityZone);
+      return {
+        ...saved,
+        zone_thumbnail_image: await this.uploads.resolveDisplayUrl(
+          saved.zone_thumbnail_image,
+        ),
+        zone_image_gallery: await this.uploads.resolveDisplayUrlList(
+          saved.zone_image_gallery,
+        ),
+      };
     } catch (error) {
       console.error('Error updating activity zone:', error);
       throw new InternalServerErrorException('Failed to update activity zone');
@@ -127,12 +150,11 @@ export class ActivityZonesService {
       }
 
       if (activityZone.zone_thumbnail_image !== undefined) {
-        await deleteFileIfExists(activityZone.zone_thumbnail_image);
+        await this.uploads.deleteStored(activityZone.zone_thumbnail_image);
       }
 
-      // Handle gallery update
       if (activityZone.zone_image_gallery !== undefined) {
-        await deleteMultipleFilesIfExist(activityZone.zone_image_gallery);
+        await this.uploads.deleteManyStored(activityZone.zone_image_gallery);
       }
 
       // Delete the entity

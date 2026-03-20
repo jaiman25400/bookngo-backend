@@ -1,7 +1,4 @@
-import {
-  deleteFileIfExists,
-  deleteMultipleFilesIfExist,
-} from '../../../../utils/common.helper';
+import { UploadsService } from '../../../storage/uploads.service';
 import { UpdateActivityDto } from '../dto/update-activity.dto';
 import { Activity } from '../entities/activity.entity';
 import { ActivityZone } from '../../activity-zones/entities/activity-zone.entity';
@@ -12,16 +9,20 @@ import { ActivityHoliday } from '../entities/activity-holiday.entity';
 /**
  * Handles file updates (thumbnail & gallery) for an activity.
  */
-export async function handleFileUpdates(activity: Activity, dto: any) {
+export async function handleFileUpdates(
+  activity: Activity,
+  dto: any,
+  uploads: UploadsService,
+) {
   // Handle thumbnail update
   if (dto.activity_thumbnail_image !== undefined) {
-    await deleteFileIfExists(activity.activity_thumbnail_image);
+    await uploads.deleteStored(activity.activity_thumbnail_image);
     activity.activity_thumbnail_image = dto.activity_thumbnail_image;
   }
 
   // Handle gallery update
   if (dto.activity_image_gallery !== undefined) {
-    await deleteMultipleFilesIfExist(activity.activity_image_gallery);
+    await uploads.deleteManyStored(activity.activity_image_gallery);
     activity.activity_image_gallery = dto.activity_image_gallery;
   }
 }

@@ -8,10 +8,7 @@ import { Repository } from 'typeorm';
 import { Customer } from './entities/customers.entity'; // assuming the customer entity is in the 'customer.entity.ts' file
 import { CustomerDetail } from './entities/customers-detail.entity';
 import { CreateCustomerDetailDto } from './dto/create-customer-detail.dto';
-import {
-  deleteFileIfExists,
-  deleteMultipleFilesIfExist,
-} from '../../../utils/common.helper';
+import { UploadsService } from '../../storage/uploads.service';
 
 @Injectable()
 export class CustomersService {
@@ -20,6 +17,7 @@ export class CustomersService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerDetail)
     private customerDetailRepository: Repository<CustomerDetail>,
+    private readonly uploads: UploadsService,
   ) {}
 
   async findOneCustomerById(id: number): Promise<Customer | null> {
@@ -27,12 +25,20 @@ export class CustomersService {
   }
 
   async findOneCustomerDetailById(customerId: number) {
-    // Return type should not include "null" if you handle errors
     const detail = await this.customerDetailRepository.findOne({
       where: { customer: { id: customerId } },
     });
 
-    return detail;
+    if (!detail) return detail;
+
+    return {
+      ...detail,
+      home_image_url:
+        (await this.uploads.resolveDisplayUrl(detail.home_image_url)) ?? '',
+      home_image_gallery: (
+        await this.uploads.resolveDisplayUrlList(detail.home_image_gallery)
+      ).filter((u): u is string => u != null),
+    };
   }
 
   // async createCustomerDetail(
@@ -83,25 +89,27 @@ export class CustomersService {
       }
       const detail = customer.detail;
 
-      // ✅ Handle thumbnail update
-      if (updateDto.home_image_url !== undefined && detail.home_image_url) {
-        await deleteFileIfExists(detail.home_image_url);
-        detail.home_image_url = updateDto.home_image_url;
+      if (updateDto.home_image_url !== undefined) {
+        await this.uploads.deleteStored(detail.home_image_url);
       }
-
-      // ✅ Handle gallery update
       if (
         updateDto.home_image_gallery !== undefined &&
-        detail.home_image_gallery
+        detail.home_image_gallery?.length
       ) {
-        await deleteMultipleFilesIfExist(detail.home_image_gallery);
-        detail.home_image_gallery = updateDto.home_image_gallery;
+        await this.uploads.deleteManyStored(detail.home_image_gallery);
       }
 
-      // ✅ Merge other updates
       Object.assign(detail, updateDto);
 
-      return await this.customerDetailRepository.save(detail);
+      const saved = await this.customerDetailRepository.save(detail);
+      return {
+        ...saved,
+        home_image_url:
+          (await this.uploads.resolveDisplayUrl(saved.home_image_url)) ?? '',
+        home_image_gallery: (
+          await this.uploads.resolveDisplayUrlList(saved.home_image_gallery)
+        ).filter((u): u is string => u != null),
+      };
     } catch (error) {
       // Optional: log or transform error if needed
       throw new InternalServerErrorException(

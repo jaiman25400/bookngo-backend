@@ -14,12 +14,17 @@ import {
 import { CustomersService } from './customers.service';
 import { CreateCustomerDetailDto } from './dto/create-customer-detail.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { join } from 'path';
+import { UploadsService } from '../../storage/uploads.service';
+import { multerMemoryOptions } from '../../../utils/multer-memory';
+
+const CUSTOMER_UPLOAD_FOLDER = 'CMS/customer';
 
 @Controller('customers')
 export class CustomerController {
-  constructor(private readonly customerService: CustomersService) {}
+  constructor(
+    private readonly customerService: CustomersService,
+    private readonly uploads: UploadsService,
+  ) {}
 
   @Get('profile')
   async getCustomerDetails(@Request() req) {
@@ -43,15 +48,7 @@ export class CustomerController {
         { name: 'home_image_url', maxCount: 1 },
         { name: 'home_image_gallery', maxCount: 5 },
       ],
-      {
-        storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'CMS', 'customer'),
-          filename: (req, file, cb) => {
-            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
-            cb(null, uniqueName);
-          },
-        }),
-      },
+      multerMemoryOptions,
     ),
   )
   async updateCustomerDetail(
@@ -64,14 +61,15 @@ export class CustomerController {
     },
   ) {
     try {
+      const home = uploadedFiles.home_image_url?.[0];
+      const gallery = uploadedFiles.home_image_gallery;
       const filePaths = {
-        home_image_url: uploadedFiles.home_image_url?.[0]
-          ? `/uploads/CMS/customer/${uploadedFiles.home_image_url[0].filename}`
+        home_image_url: home
+          ? await this.uploads.persistMulterFile(home, CUSTOMER_UPLOAD_FOLDER)
           : undefined,
-        home_image_gallery:
-          uploadedFiles.home_image_gallery?.map(
-            (f) => `/uploads/CMS/customer/${f.filename}`,
-          ) ?? undefined,
+        home_image_gallery: gallery?.length
+          ? await this.uploads.persistMulterFiles(gallery, CUSTOMER_UPLOAD_FOLDER)
+          : undefined,
       };
 
       return await this.customerService.updateCustomerDetail(

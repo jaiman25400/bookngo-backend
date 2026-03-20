@@ -23,10 +23,7 @@ import {
   updateSchedules,
   updateZones,
 } from './utils/activities.helper';
-import {
-  deleteFileIfExists,
-  deleteMultipleFilesIfExist,
-} from '../../../utils/common.helper';
+import { UploadsService } from '../../storage/uploads.service';
 
 @Injectable()
 export class ActivitiesService {
@@ -42,20 +39,51 @@ export class ActivitiesService {
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
     private readonly dataSource: DataSource,
+    private readonly uploads: UploadsService,
   ) {}
 
   // Get activities for a specific customer
-  async getActivitiesForCustomer(customerId: number): Promise<Activity[]> {
+  async getActivitiesForCustomer(customerId: number): Promise<any[]> {
     try {
       const activities = await this.activityRepository.find({
         where: { customer: { id: customerId } }, // Filter by customer ID
         relations: ['zones', 'schedules', 'holidays'],
       });
-      return activities;
+      return Promise.all(
+        activities.map((a) => this.resolveActivityMediaForCms(a)),
+      );
     } catch (error) {
       console.error('Error fetching activities for customer:', error);
       throw new Error('Failed to fetch activities');
     }
+  }
+
+  private async resolveActivityMediaForCms(activity: Activity): Promise<any> {
+    const zones = activity.zones;
+    const resolvedZones = zones?.length
+      ? await Promise.all(
+          zones.map(async (zone) => ({
+            ...zone,
+            zone_thumbnail_image:
+              (await this.uploads.resolveDisplayUrl(zone.zone_thumbnail_image)) ??
+              '',
+            zone_image_gallery: (
+              await this.uploads.resolveDisplayUrlList(zone.zone_image_gallery)
+            ).filter((u): u is string => u != null),
+          })),
+        )
+      : zones;
+    return {
+      ...activity,
+      activity_thumbnail_image:
+        (await this.uploads.resolveDisplayUrl(
+          activity.activity_thumbnail_image,
+        )) ?? '',
+      activity_image_gallery: (
+        await this.uploads.resolveDisplayUrlList(activity.activity_image_gallery)
+      ).filter((u): u is string => u != null),
+      zones: resolvedZones,
+    };
   }
 
   // Create Activity
@@ -208,9 +236,9 @@ export class ActivitiesService {
         external_booking_url: createData.external_booking_url ?? null,
       };
 
-      // Create and save the new activity entity
       const newActivity = this.activityRepository.create(activityData);
-      return await this.activityRepository.save(newActivity);
+      const saved = await this.activityRepository.save(newActivity);
+      return this.resolveActivityMediaForCms(saved);
     } catch (error) {
       console.error('Error creating activity:', error);
 
@@ -249,7 +277,7 @@ export class ActivitiesService {
       if (!activity) throw new NotFoundException('Activity not found');
 
       // Handle file updates first
-      await handleFileUpdates(activity, updateActivityDTO);
+      await handleFileUpdates(activity, updateActivityDTO, this.uploads);
 
       // // Update scalar fields using DTO
       await updateScalarFields(activity, updateActivityDTO);
@@ -271,9 +299,8 @@ export class ActivitiesService {
         this.activityHolidayRepository,
       );
 
-      // Save the updated activity
       const updatedActivity = await this.activityRepository.save(activity);
-      return updatedActivity;
+      return this.resolveActivityMediaForCms(updatedActivity);
     } catch (error) {
       console.error('Error updating activity data:', error);
       throw new InternalServerErrorException('Failed to update activity data');
@@ -303,11 +330,11 @@ export class ActivitiesService {
       await this.activityRepository.delete(id);
 
       if (activity.activity_thumbnail_image != undefined) {
-        await deleteFileIfExists(activity.activity_thumbnail_image);
+        await this.uploads.deleteStored(activity.activity_thumbnail_image);
       }
 
       if (activity.activity_image_gallery != undefined) {
-        await deleteMultipleFilesIfExist(activity.activity_image_gallery);
+        await this.uploads.deleteManyStored(activity.activity_image_gallery);
       }
 
       return {

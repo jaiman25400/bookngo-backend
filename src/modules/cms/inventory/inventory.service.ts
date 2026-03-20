@@ -7,9 +7,7 @@ import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
 import { CreateInventorySizeDto } from './dto/create-inventory-size.dto';
 import { Customer } from '../customers/entities/customers.entity';
-import { join } from 'path';
-import { existsSync, unlinkSync } from 'fs';
-import { deleteFileIfExists } from '../../../utils/common.helper';
+import { UploadsService } from '../../storage/uploads.service';
 
 @Injectable()
 export class InventoryService {
@@ -22,12 +20,13 @@ export class InventoryService {
 
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    private readonly uploads: UploadsService,
   ) {}
 
   async createInventory(
     customer: Customer,
     createInventoryDto: CreateInventoryDto,
-    thumbnail: Express.Multer.File | undefined,
+    thumbnailStorageRef: string | null | undefined,
   ) {
     const {
       equipment_name,
@@ -38,10 +37,7 @@ export class InventoryService {
       sizes,
     } = createInventoryDto;
 
-    // Generate thumbnail URL if file exists
-    const thumbnailImageUrl = thumbnail
-      ? `/uploads/CMS/inventory/${thumbnail.filename}`
-      : null;
+    const thumbnailImageUrl = thumbnailStorageRef ?? null;
 
     // Create inventory entry including new optional fields
     const newInventory = this.inventoryRepository.create({
@@ -55,6 +51,13 @@ export class InventoryService {
     });
 
     const savedInventory = await this.inventoryRepository.save(newInventory);
+
+    const withUrl = {
+      ...savedInventory,
+      thumbnailImageUrl: await this.uploads.resolveDisplayUrl(
+        savedInventory.thumbnailImageUrl,
+      ),
+    };
 
     // Add sizes if provided, including the optional description field for each size
     // Handle sizes parsing and saving
@@ -73,10 +76,18 @@ export class InventoryService {
   }
 
   async getAllInventories(customer_id: number) {
-    return await this.inventoryRepository.find({
+    const rows = await this.inventoryRepository.find({
       where: { customer: { id: customer_id } },
       relations: ['sizes'],
     });
+    return Promise.all(
+      rows.map(async (inv) => ({
+        ...inv,
+        thumbnailImageUrl: await this.uploads.resolveDisplayUrl(
+          inv.thumbnailImageUrl,
+        ),
+      })),
+    );
   }
 
   async getInventoryById(id: number) {
@@ -87,25 +98,30 @@ export class InventoryService {
     if (!inventory) {
       throw new NotFoundException(`Inventory with ID ${id} not found`);
     }
-    return inventory;
+    return {
+      ...inventory,
+      thumbnailImageUrl: await this.uploads.resolveDisplayUrl(
+        inventory.thumbnailImageUrl,
+      ),
+    };
   }
 
   async updateInventory(
     id: number,
     updateInventoryDto: UpdateInventoryDto,
-    thumbnail?: Express.Multer.File,
+    thumbnailStorageRef?: string | null,
   ) {
     try {
-      // Step 1: Get the existing inventory by ID
-      const inventory = await this.getInventoryById(id);
+      const inventory = await this.inventoryRepository.findOne({
+        where: { id },
+        relations: ['sizes'],
+      });
       if (!inventory) {
         throw new NotFoundException(`Inventory with ID ${id} not found`);
       }
-      // Handle file update
-      if (thumbnail) {
-        await deleteFileIfExists(inventory.thumbnailImageUrl);
-        // Update with new file path
-        inventory.thumbnailImageUrl = `/uploads/CMS/inventory/${thumbnail.filename}`;
+      if (thumbnailStorageRef) {
+        await this.uploads.deleteStored(inventory.thumbnailImageUrl);
+        inventory.thumbnailImageUrl = thumbnailStorageRef;
       }
 
       // Step 2: Update the main inventory fields
@@ -145,19 +161,15 @@ export class InventoryService {
       });
 
       await this.inventoryRepository.save(inventory);
-      return inventory;
+      return {
+        ...inventory,
+        thumbnailImageUrl: await this.uploads.resolveDisplayUrl(
+          inventory.thumbnailImageUrl,
+        ),
+      };
     } catch (error) {
-      // Clean up uploaded file if error occurs
-      if (thumbnail) {
-        const newFilePath = join(
-          process.cwd(),
-          'uploads',
-          'CMS',
-          thumbnail.filename,
-        );
-        if (existsSync(newFilePath)) {
-          unlinkSync(newFilePath);
-        }
+      if (thumbnailStorageRef) {
+        await this.uploads.deleteStored(thumbnailStorageRef);
       }
       throw error;
     }
@@ -175,9 +187,8 @@ export class InventoryService {
       );
     }
 
-    // Delete associated thumbnail file
     if (inventory.thumbnailImageUrl) {
-      await deleteFileIfExists(inventory.thumbnailImageUrl);
+      await this.uploads.deleteStored(inventory.thumbnailImageUrl);
     }
 
     // Delete database record

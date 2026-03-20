@@ -16,13 +16,18 @@ import {
 import { ActivityZonesService } from './activity-zones.service';
 import { UpdateActivityZoneDto } from './dto/update-activity-zone.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { join } from 'path';
 import { CreateActivityZoneDto } from './dto/create-activity-zone.dto';
+import { UploadsService } from '../../storage/uploads.service';
+import { multerMemoryOptions } from '../../../utils/multer-memory';
+
+const ZONE_UPLOAD_FOLDER = 'CMS/zones';
 
 @Controller('activity-zones')
 export class ActivityZonesController {
-  constructor(private readonly activityZonesService: ActivityZonesService) {}
+  constructor(
+    private readonly activityZonesService: ActivityZonesService,
+    private readonly uploads: UploadsService,
+  ) {}
 
   @Post('add')
   @UseInterceptors(
@@ -31,15 +36,7 @@ export class ActivityZonesController {
         { name: 'zone_thumbnail_image', maxCount: 1 },
         { name: 'zone_image_gallery', maxCount: 5 },
       ],
-      {
-        storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'CMS', 'zones'),
-          filename: (req, file, cb) => {
-            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
-            cb(null, uniqueName);
-          },
-        }),
-      },
+      multerMemoryOptions,
     ),
   )
   async create(
@@ -66,15 +63,18 @@ export class ActivityZonesController {
         zone_image_gallery?: string[];
       } = {};
 
-      // Handle thumbnail file
-      if (uploadedFiles?.zone_thumbnail_image?.[0]) {
-        filePaths.zone_thumbnail_image = `/uploads/CMS/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
+      const thumb = uploadedFiles?.zone_thumbnail_image?.[0];
+      const gallery = uploadedFiles?.zone_image_gallery;
+      if (thumb) {
+        filePaths.zone_thumbnail_image = await this.uploads.persistMulterFile(
+          thumb,
+          ZONE_UPLOAD_FOLDER,
+        );
       }
-
-      // Handle gallery files
-      if (uploadedFiles?.zone_image_gallery?.length) {
-        filePaths.zone_image_gallery = uploadedFiles.zone_image_gallery.map(
-          (f) => `/uploads/CMS/zones/${f.filename}`,
+      if (gallery?.length) {
+        filePaths.zone_image_gallery = await this.uploads.persistMulterFiles(
+          gallery,
+          ZONE_UPLOAD_FOLDER,
         );
       }
 
@@ -116,15 +116,7 @@ export class ActivityZonesController {
         { name: 'zone_thumbnail_image', maxCount: 1 },
         { name: 'zone_image_gallery', maxCount: 5 },
       ],
-      {
-        storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'CMS', 'zones'),
-          filename: (req, file, cb) => {
-            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
-            cb(null, uniqueName);
-          },
-        }),
-      },
+      multerMemoryOptions,
     ),
   )
   async update(
@@ -141,15 +133,18 @@ export class ActivityZonesController {
       zone_image_gallery?: string[];
     } = {};
 
-    // Handle thumbnail file
-    if (uploadedFiles?.zone_thumbnail_image?.[0]) {
-      filePaths.zone_thumbnail_image = `/uploads/CMS/zones/${uploadedFiles.zone_thumbnail_image[0].filename}`;
+    const thumb = uploadedFiles?.zone_thumbnail_image?.[0];
+    const gallery = uploadedFiles?.zone_image_gallery;
+    if (thumb) {
+      filePaths.zone_thumbnail_image = await this.uploads.persistMulterFile(
+        thumb,
+        ZONE_UPLOAD_FOLDER,
+      );
     }
-
-    // Handle gallery files
-    if (uploadedFiles?.zone_image_gallery?.length) {
-      filePaths.zone_image_gallery = uploadedFiles.zone_image_gallery.map(
-        (f) => `/uploads/CMS/zones/${f.filename}`,
+    if (gallery?.length) {
+      filePaths.zone_image_gallery = await this.uploads.persistMulterFiles(
+        gallery,
+        ZONE_UPLOAD_FOLDER,
       );
     }
 

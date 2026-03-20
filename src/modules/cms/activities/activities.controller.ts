@@ -19,12 +19,17 @@ import { CreateActivityDto } from './dto/create-activity.dto';
 import { Activity } from './entities/activity.entity';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { join } from 'path';
+import { UploadsService } from '../../storage/uploads.service';
+import { multerMemoryOptions } from '../../../utils/multer-memory';
+
+const ACTIVITY_UPLOAD_FOLDER = 'CMS/activity';
 
 @Controller('activities')
 export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService) {}
+  constructor(
+    private readonly activitiesService: ActivitiesService,
+    private readonly uploads: UploadsService,
+  ) {}
 
   @Get()
   async getActivities(@Request() req) {
@@ -41,15 +46,7 @@ export class ActivitiesController {
         { name: 'activity_thumbnail_image', maxCount: 1 },
         { name: 'activity_image_gallery', maxCount: 5 },
       ],
-      {
-        storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'CMS', 'activity'),
-          filename: (req, file, cb) => {
-            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
-            cb(null, uniqueName);
-          },
-        }),
-      },
+      multerMemoryOptions,
     ),
   )
   async createActivity(
@@ -67,15 +64,15 @@ export class ActivitiesController {
       throw new BadRequestException('Customer ID is missing for the user');
     }
 
-    // Handle file paths
+    const thumb = uploadedFiles.activity_thumbnail_image?.[0];
+    const gallery = uploadedFiles.activity_image_gallery;
     const filePaths = {
-      activity_thumbnail_image: uploadedFiles.activity_thumbnail_image?.[0]
-        ? `/uploads/CMS/activity/${uploadedFiles.activity_thumbnail_image[0].filename}`
+      activity_thumbnail_image: thumb
+        ? await this.uploads.persistMulterFile(thumb, ACTIVITY_UPLOAD_FOLDER)
         : undefined,
-      activity_image_gallery:
-        uploadedFiles.activity_image_gallery?.map(
-          (f) => `/uploads/CMS/activity/${f.filename}`,
-        ) ?? undefined, // Return null if the left side is undefined/null
+      activity_image_gallery: gallery?.length
+        ? await this.uploads.persistMulterFiles(gallery, ACTIVITY_UPLOAD_FOLDER)
+        : undefined,
     };
 
     return this.activitiesService.createActivity(
@@ -91,15 +88,7 @@ export class ActivitiesController {
         { name: 'activity_thumbnail_image', maxCount: 1 },
         { name: 'activity_image_gallery', maxCount: 5 },
       ],
-      {
-        storage: diskStorage({
-          destination: join(process.cwd(), 'uploads', 'CMS', 'activity'),
-          filename: (req, file, cb) => {
-            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.originalname}`;
-            cb(null, uniqueName);
-          },
-        }),
-      },
+      multerMemoryOptions,
     ),
   )
   async update(
@@ -125,17 +114,15 @@ export class ActivitiesController {
         activity_image_gallery?: string[];
       } = {};
 
-      // Handle thumbnail file
-      if (uploadedFiles?.activity_thumbnail_image?.[0]) {
-        filePaths.activity_thumbnail_image = `/uploads/CMS/activity/${uploadedFiles.activity_thumbnail_image[0].filename}`;
+      const thumb = uploadedFiles?.activity_thumbnail_image?.[0];
+      const gallery = uploadedFiles?.activity_image_gallery;
+      if (thumb) {
+        filePaths.activity_thumbnail_image =
+          await this.uploads.persistMulterFile(thumb, ACTIVITY_UPLOAD_FOLDER);
       }
-
-      // Handle gallery files
-      if (uploadedFiles?.activity_image_gallery?.length) {
+      if (gallery?.length) {
         filePaths.activity_image_gallery =
-          uploadedFiles.activity_image_gallery.map(
-            (f) => `/uploads/CMS/activity/${f.filename}`,
-          );
+          await this.uploads.persistMulterFiles(gallery, ACTIVITY_UPLOAD_FOLDER);
       }
 
       return this.activitiesService.updateActivity(id, {
