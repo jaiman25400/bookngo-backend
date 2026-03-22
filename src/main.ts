@@ -57,11 +57,14 @@ async function bootstrap() {
     express.urlencoded({ extended: true, limit: `${BODY_LIMIT_MB}mb` }),
   );
 
+  const corsOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.CMS_FRONTEND_URL,
+  ].filter((o): o is string => typeof o === 'string' && o.length > 0);
+
   // ✅ Enable CORS
   app.enableCors({
-    origin: [process.env.FRONTEND_URL, process.env.CMS_FRONTEND_URL].filter(
-      Boolean,
-    ), // This removes any undefined/null values
+    origin: corsOrigins,
     credentials: true,
     exposedHeaders: ['Content-Type', 'Authorization'],
   });
