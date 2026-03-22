@@ -2,6 +2,7 @@ import { config as loadEnv } from 'dotenv';
 loadEnv();
 
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import { ValidationPipe } from '@nestjs/common';
@@ -40,10 +41,21 @@ async function ensureSchemas(): Promise<void> {
   /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 }
 
+/** Max JSON / urlencoded body (MB). Multipart uploads use multer limits in controllers. */
+const BODY_LIMIT_MB = Number(process.env.BODY_LIMIT_MB) || 25;
+
 async function bootstrap() {
   await ensureSchemas();
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
+
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.use(express.json({ limit: `${BODY_LIMIT_MB}mb` }));
+  expressApp.use(
+    express.urlencoded({ extended: true, limit: `${BODY_LIMIT_MB}mb` }),
+  );
 
   // ✅ Enable CORS
   app.enableCors({
