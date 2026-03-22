@@ -40,6 +40,7 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
+    "iconv-lite": "0.6.3",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.10.0",
     "passport": "^0.7.0",
@@ -78,6 +79,9 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
+  },
+  "overrides": {
+    "iconv-lite": "0.6.3"
   },
   "jest": {
     "moduleFileExtensions": [
