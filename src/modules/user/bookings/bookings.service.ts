@@ -13,6 +13,7 @@ import { ActivityRentalReservation } from './entities/booking_activity_rentals_l
 import { InventorySize } from '../../cms/inventory/entities/inventory-size.entity';
 import { format } from 'date-fns';
 import * as dayjs from 'dayjs';
+import { UploadsService } from '../../storage/uploads.service';
 
 @Injectable()
 export class BookingsService {
@@ -40,6 +41,8 @@ export class BookingsService {
 
     @InjectRepository(InventorySize)
     private inventorySizeRepo: Repository<InventorySize>,
+
+    private readonly uploads: UploadsService,
   ) {}
 
   async getInventoryUsingCustomerSlug(
@@ -156,7 +159,14 @@ export class BookingsService {
       });
     }
 
-    return inventoryDataWithAvailability;
+    return Promise.all(
+      inventoryDataWithAvailability.map(async (inv) => ({
+        ...inv,
+        thumbnailImageUrl:
+          (await this.uploads.resolveDisplayUrl(inv.thumbnailImageUrl)) ??
+          null,
+      })),
+    );
   }
 
   async createBooking(createDto: any) {

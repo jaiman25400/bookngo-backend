@@ -35,7 +35,10 @@ export class SkiSlopesService {
         const results = await this.customerDetailRepository.find({
           where: { customer_state: region },
         });
-        return { region, count: results.length, results };
+        const resolved = await Promise.all(
+          results.map((d) => this.mapCustomerDetailImages(d)),
+        );
+        return { region, count: resolved.length, results: resolved };
       }
 
       const qb = this.customerDetailRepository
@@ -51,7 +54,10 @@ export class SkiSlopesService {
         .distinctOn(['customer.id']);
 
       const results = await qb.getMany();
-      return { region, count: results.length, results };
+      const resolved = await Promise.all(
+        results.map((d) => this.mapCustomerDetailImages(d)),
+      );
+      return { region, count: resolved.length, results: resolved };
     } catch (error) {
       this.logger.error(
         `Failed to fetch customers for region ${region}`,
@@ -179,5 +185,19 @@ export class SkiSlopesService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  /** S3 keys / legacy paths → presigned or absolute URLs for the public site. */
+  private async mapCustomerDetailImages(
+    detail: CustomerDetail,
+  ): Promise<CustomerDetail> {
+    return {
+      ...detail,
+      home_image_url:
+        (await this.uploads.resolveDisplayUrl(detail.home_image_url)) ?? '',
+      home_image_gallery: (
+        await this.uploads.resolveDisplayUrlList(detail.home_image_gallery)
+      ).filter((u): u is string => u != null),
+    } as CustomerDetail;
   }
 }

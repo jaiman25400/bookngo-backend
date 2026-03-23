@@ -10,10 +10,12 @@ The database stores:
 - **S3 object key**, e.g. `CMS/activity/1739-….jpg`, or  
 - **Local path**, e.g. `/uploads/CMS/activity/….jpg`
 
-Public/user and CMS **read** APIs return **display URLs**:
+Public/user and CMS **read** APIs return **display URLs** (never raw S3 keys in JSON for these):
 
 - S3 keys → **presigned GET** URLs (default TTL **3600s**, override with `S3_PRESIGNED_URL_TTL_SECONDS`)
 - `/uploads/…` → `API_PUBLIC_URL` + path (e.g. `https://api.bookngo.ca/uploads/...`)
+
+**User (public) routes that resolve images:** `VendorsService` (vendor slug + activity by id), `SkiSlopesService` (all ski-slopes endpoints including `GET /user/ski-slopes?region=…`), `BookingsService.getInventoryUsingCustomerSlug` (inventory `thumbnailImageUrl`). **CMS** list/detail endpoints also resolve on read.
 
 ## Environment variables
 
