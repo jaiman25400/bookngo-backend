@@ -13,10 +13,18 @@ export class OnboardingController {
     return this.onboardingService.onboardIceSkatingClient(dto);
   }
 
+  @Public()
+  @Post('skiing-client')
+  async onboardSkiingClient(@Body() dto: OnboardIceSkatingClientDto) {
+    return this.onboardingService.onboardSkiingClient(dto);
+  }
+
   /** Reset admin password to BookNGO@123 for a customer (dev only). Use customer_id from onboarding response. */
   @Public()
   @Post('reset-admin-password')
   async resetAdminPassword(@Body() body: { customer_id: number }) {
-    return this.onboardingService.resetOnboardingAdminPassword(body.customer_id);
+    return this.onboardingService.resetOnboardingAdminPassword(
+      body.customer_id,
+    );
   }
 }
