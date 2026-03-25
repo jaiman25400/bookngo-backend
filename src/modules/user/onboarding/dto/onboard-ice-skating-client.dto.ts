@@ -35,4 +35,16 @@ export class OnboardIceSkatingClientDto {
   @Min(-180)
   @Max(180)
   longitude: number;
+
+  @IsOptional()
+  @IsString()
+  about_us?: string;
+
+  @IsOptional()
+  @IsString()
+  activity_description?: string;
+
+  @IsOptional()
+  @IsString()
+  activity_tagline?: string;
 }

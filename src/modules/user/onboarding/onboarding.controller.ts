@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
 import { OnboardIceSkatingClientDto } from './dto/onboard-ice-skating-client.dto';
+import { UpdateOnboardedContentDto } from './dto/update-onboarded-content.dto';
 import { Public } from '../../cms/auth/public.decorator';
 
 @Controller('user/onboarding')
@@ -17,6 +18,12 @@ export class OnboardingController {
   @Post('skiing-client')
   async onboardSkiingClient(@Body() dto: OnboardIceSkatingClientDto) {
     return this.onboardingService.onboardSkiingClient(dto);
+  }
+
+  @Public()
+  @Post('update-onboarded-content')
+  async updateOnboardedContent(@Body() dto: UpdateOnboardedContentDto) {
+    return this.onboardingService.updateOnboardedContent(dto);
   }
 
   /** Reset admin password to BookNGO@123 for a customer (dev only). Use customer_id from onboarding response. */

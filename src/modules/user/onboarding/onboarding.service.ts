@@ -21,6 +21,7 @@ import {
   BookingType,
 } from '../../cms/activities/enums/activity-type.enum';
 import { OnboardIceSkatingClientDto } from './dto/onboard-ice-skating-client.dto';
+import { UpdateOnboardedContentDto } from './dto/update-onboarded-content.dto';
 
 const ADMIN_PASSWORD = 'BookNGO@123';
 const START_DATE = new Date('2026-02-01');
@@ -113,7 +114,7 @@ export class OnboardingService {
         customer_display_email: email,
         home_image_url: undefined,
         home_image_gallery: undefined,
-        about_us: undefined,
+        about_us: dto.about_us?.trim() || undefined,
         features: undefined,
       } as Partial<CustomerDetail>);
       await queryRunner.manager.save(CustomerDetail, detail);
@@ -181,7 +182,8 @@ export class OnboardingService {
         customer: savedCustomer as Customer,
         activity_name: 'Skating',
         activity_type: ActivityType.SKATING,
-        activity_description: 'Public ice skating',
+        activity_description:
+          dto.activity_description?.trim() || 'Public ice skating',
         base_price: 10,
         duration_hours: 3,
         start_date: START_DATE,
@@ -189,7 +191,7 @@ export class OnboardingService {
         slot_interval_minutes: 60,
         max_per_slot: 10,
         is_active: true,
-        activity_tagline: undefined,
+        activity_tagline: dto.activity_tagline?.trim() || undefined,
         activity_thumbnail_image: undefined,
         activity_image_gallery: undefined,
         safety_instructions: undefined,
@@ -308,7 +310,7 @@ export class OnboardingService {
         customer_display_email: email,
         home_image_url: undefined,
         home_image_gallery: undefined,
-        about_us: undefined,
+        about_us: dto.about_us?.trim() || undefined,
         features: undefined,
       } as Partial<CustomerDetail>);
       await queryRunner.manager.save(CustomerDetail, detail);
@@ -372,7 +374,7 @@ export class OnboardingService {
         customer: savedCustomer as Customer,
         activity_name: 'Skiing',
         activity_type: ActivityType.SKIING,
-        activity_description: 'Public skiing',
+        activity_description: dto.activity_description?.trim() || 'Public skiing',
         base_price: 10,
         duration_hours: 3,
         start_date: START_DATE,
@@ -380,7 +382,7 @@ export class OnboardingService {
         slot_interval_minutes: 60,
         max_per_slot: 10,
         is_active: true,
-        activity_tagline: undefined,
+        activity_tagline: dto.activity_tagline?.trim() || undefined,
         activity_thumbnail_image: undefined,
         activity_image_gallery: undefined,
         safety_instructions: undefined,
@@ -452,6 +454,62 @@ export class OnboardingService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  /**
+   * Update profile/about and activity content for already-onboarded customers.
+   * Applies the same activity description/tagline to all activities of that customer.
+   */
+  async updateOnboardedContent(
+    dto: UpdateOnboardedContentDto,
+  ): Promise<{
+    customer_id: number;
+    updated_profile: boolean;
+    updated_activities: number;
+    message: string;
+  }> {
+    const detail = await this.customerDetailRepo.findOne({
+      where: { customer: { id: dto.customer_id } },
+    });
+
+    if (!detail) {
+      throw new BadRequestException(
+        `Customer detail not found for customer_id ${dto.customer_id}`,
+      );
+    }
+
+    if (dto.about_us !== undefined) {
+      detail.about_us = dto.about_us?.trim() || '';
+      await this.customerDetailRepo.save(detail);
+    }
+
+    const activities = await this.activityRepo.find({
+      where: { customer: { id: dto.customer_id } },
+    });
+
+    let updatedActivities = 0;
+    if (
+      activities.length > 0 &&
+      (dto.activity_description !== undefined || dto.activity_tagline !== undefined)
+    ) {
+      for (const activity of activities) {
+        if (dto.activity_description !== undefined) {
+          activity.activity_description = dto.activity_description?.trim() || '';
+        }
+        if (dto.activity_tagline !== undefined) {
+          activity.activity_tagline = dto.activity_tagline?.trim() || '';
+        }
+      }
+      await this.activityRepo.save(activities);
+      updatedActivities = activities.length;
+    }
+
+    return {
+      customer_id: dto.customer_id,
+      updated_profile: dto.about_us !== undefined,
+      updated_activities: updatedActivities,
+      message: `Updated onboarding content for customer ${dto.customer_id}`,
+    };
   }
 
   /**
