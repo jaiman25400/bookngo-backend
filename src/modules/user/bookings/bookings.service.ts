@@ -1,7 +1,7 @@
 // bookings.service.ts
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Inventory } from '../../cms/inventory/entities/inventory.entity';
 import { CustomerDetail } from '../../cms/customers/entities/customers-detail.entity';
 import { Injectable } from '@nestjs/common';
@@ -44,6 +44,53 @@ export class BookingsService {
 
     private readonly uploads: UploadsService,
   ) {}
+
+  /** Parses stored money/base_price values (decimal column may arrive as string). */
+  private parseMoney(value: unknown): number {
+    if (value === null || value === undefined) return NaN;
+    const n = Number(String(value).replace(/,/g, '').trim());
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  private isFreeAdmissionBasePrice(value: unknown): boolean {
+    const n = this.parseMoney(value);
+    return Number.isFinite(n) && n <= 0;
+  }
+
+  /**
+   * Sum of per-size rental units still available for the given time window
+   * (same overlap rules as getInventoryUsingCustomerSlug).
+   */
+  private sumAvailableRentalsForWindow(
+    inventories: Inventory[],
+    reservations: ActivityRentalReservation[],
+    slotTime: string,
+    durationHours: number,
+  ): number {
+    const [hours, minutes] = slotTime.split(':').map(Number);
+    const startTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+    const endHours = hours + durationHours;
+    const endTime = `${endHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+
+    let total = 0;
+    for (const inventory of inventories) {
+      for (const size of inventory.sizes || []) {
+        const overlapping = reservations.filter(
+          (r) =>
+            r.inventory_id === inventory.id &&
+            r.size_id === size.id &&
+            r.start_time <= endTime &&
+            r.end_time >= startTime,
+        );
+        const totalReserved = overlapping.reduce(
+          (sum, res) => sum + res.rental_booked_count,
+          0,
+        );
+        total += Math.max(size.quantity - totalReserved, 0);
+      }
+    }
+    return total;
+  }
 
   async getInventoryUsingCustomerSlug(
     slug: string,
@@ -185,8 +232,34 @@ export class BookingsService {
     });
 
     if (!activity) {
-      throw new Error(`Activity with ID ${createDto.activityId} not found`);
+      throw new BadRequestException(
+        `Activity with ID ${createDto.activityId} not found`,
+      );
     }
+
+    const ticketsInput = createDto.tickets;
+    const numberOfTickets =
+      ticketsInput === '' || ticketsInput === null || ticketsInput === undefined
+        ? NaN
+        : Number(ticketsInput);
+
+    if (
+      !Number.isFinite(numberOfTickets) ||
+      numberOfTickets < 0 ||
+      !Number.isInteger(numberOfTickets)
+    ) {
+      throw new BadRequestException(
+        'Tickets must be a non-negative whole number',
+      );
+    }
+
+    const admissionFree = this.isFreeAdmissionBasePrice(activity.base_price);
+    if (!admissionFree && numberOfTickets < 1) {
+      throw new BadRequestException(
+        'At least one ticket is required for this activity',
+      );
+    }
+
     // Create booking entity with customer ID from activity
     const booking = this.bookingRepo.create({
       customerId: activity.customer.id.toString(), // ✅ Get from activity
@@ -200,7 +273,7 @@ export class BookingsService {
       zoneName: createDto.zoneName,
       bookingDate: createDto.date,
       bookingTime: createDto.time,
-      numberOfTickets: Number(createDto.tickets),
+      numberOfTickets,
       status: 'STAGED',
       paymentStatus: false,
     });
@@ -213,7 +286,9 @@ export class BookingsService {
       const equipmentIds = createDto.rentals.map((r) => r.equipmentId);
 
       // Fetch equipment prices in single query
-      const equipments = await this.inventoryRepository.findByIds(equipmentIds);
+      const equipments = await this.inventoryRepository.find({
+        where: { id: In(equipmentIds) },
+      });
       const priceMap = new Map(
         equipments.map((eq) => [eq.id, eq.rental_price_per_hour]),
       );
@@ -221,7 +296,9 @@ export class BookingsService {
       const rentals = createDto.rentals.map((rental) => {
         const price = priceMap.get(rental.equipmentId);
         if (price === undefined) {
-          throw new Error(`Equipment with ID ${rental.equipmentId} not found`);
+          throw new BadRequestException(
+            `Equipment with ID ${rental.equipmentId} not found`,
+          );
         }
 
         return this.rentalRepo.create({
@@ -433,7 +510,7 @@ export class BookingsService {
     // 1. Fetch activity details
     const activity = await this.activityRepository.findOne({
       where: { id: activityId },
-      relations: ['schedules'],
+      relations: ['schedules', 'customer'],
     });
 
     // If activity doesn't exist, treat as \"no slots\" instead of 400
@@ -502,14 +579,56 @@ export class BookingsService {
       existingBookings.map((b) => [b.slot_time, b.booked_count]),
     );
 
+    const includeRentalAvailability =
+      this.isFreeAdmissionBasePrice(activity.base_price) &&
+      activity.customer?.id != null &&
+      activity.duration_hours != null &&
+      Number(activity.duration_hours) > 0;
+
+    let inventories: Inventory[] = [];
+    let rentalReservations: ActivityRentalReservation[] = [];
+
+    if (includeRentalAvailability) {
+      inventories = await this.inventoryRepository.find({
+        where: { customer: { id: activity.customer.id } },
+        relations: ['sizes'],
+      });
+      const invIds = inventories.map((i) => i.id);
+      if (invIds.length > 0) {
+        rentalReservations = await this.activityRentalReservationRepo.find({
+          where: {
+            slot_date: date,
+            inventory_id: In(invIds),
+            status: 'CONFIRMED',
+          },
+        });
+      }
+    }
+
     // 5. Combine both
     const formattedSlots = generatedSlots.map((slotTime) => {
       const bookedCount = bookingMap.get(slotTime) || 0;
       const availableTickets = Math.max(0, maxPerSlot - bookedCount);
-      return {
+      const slot: {
+        slotTime: string;
+        availableTickets: number;
+        availableRentals?: number;
+      } = {
         slotTime,
         availableTickets,
       };
+      if (includeRentalAvailability) {
+        slot.availableRentals =
+          inventories.length === 0
+            ? 0
+            : this.sumAvailableRentalsForWindow(
+                inventories,
+                rentalReservations,
+                slotTime,
+                activity.duration_hours,
+              );
+      }
+      return slot;
     });
 
     return {
@@ -551,6 +670,7 @@ export class BookingsService {
 
     return {
       ...booking,
+      freeAdmission: this.isFreeAdmissionBasePrice(booking.activity_base_price),
       costBreakdown: {
         activityCost,
         rentalsTotal,
